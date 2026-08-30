@@ -1,0 +1,46 @@
+name: "ci-bottlenecks"
+description: "Find performance problems in GitHub Actions pipelines"
+author: "John Carmack"
+branding:
+  icon: "zap"
+  color: "orange"
+
+inputs:
+  path:
+    description: "Path to the repository root"
+    required: false
+    default: "."
+  audit:
+    description: "Enable audit tier (pulls measured data from GitHub API)"
+    required: false
+    default: "false"
+  runs:
+    description: "Maximum number of completed runs to sample for audit"
+    required: false
+    default: "50"
+  pedantic:
+    description: "Enable pedantic rules"
+    required: false
+    default: "false"
+  fail-on:
+    description: "Minimum severity to fail the check (high, medium, low, info)"
+    required: false
+    default: "high"
+  format:
+    description: "Output formats (comma-separated: text, json, sarif, summary)"
+    required: false
+    default: "text,summary,sarif"
+  token:
+    description: "GitHub token for API access (audit mode)"
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  findings:
+    description: "Number of findings"
+  sarif-path:
+    description: "Path to the generated SARIF file"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
