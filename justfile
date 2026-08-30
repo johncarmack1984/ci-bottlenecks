@@ -2,7 +2,7 @@ install:
     bun install
 
 build:
-    bun build src/action.ts --target=node --outfile dist/index.js
+    bun run build
 
 test:
     bun test

@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "ci-bottlenecks": "bin/ci-bottlenecks"
+    "ci-bottlenecks": "dist/cli.js"
   },
   "scripts": {
-    "build": "bun build src/action.ts --target=node --outfile dist/index.js",
+    "build": "bun build src/action.ts --target=node --outfile dist/index.js && bun build src/cli.ts --target=node --outfile dist/cli.js && node -e \"const fs=require('fs'); const f='dist/cli.js'; const c=fs.readFileSync(f,'utf8'); if(!c.startsWith('#!'))fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c); fs.chmodSync(f,0o755)\"",
     "test": "bun test",
     "lint": "tsc --noEmit",
     "check": "bun run lint && bun test && bun run build"
@@ -21,12 +21,15 @@
   ],
   "license": "MIT",
   "author": "John Carmack",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johncarmack1984/ci-bottlenecks"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5.8.0"
   },
   "dependencies": {
-    "@actions/core": "^1.11.0",
     "yaml": "^2.7.0"
   }
 }

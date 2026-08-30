@@ -22,6 +22,7 @@ npx ci-bottlenecks
 
 ```yaml
 - name: Run ci-bottlenecks
+  id: cib
   uses: johncarmack1984/ci-bottlenecks@v0
   with:
     format: text,summary,sarif
@@ -30,7 +31,7 @@ npx ci-bottlenecks
   if: always()
   uses: github/codeql-action/upload-sarif@v3
   with:
-    sarif_file: results.sarif
+    sarif_file: ${{ steps.cib.outputs.sarif-path }}
 ```
 
 ## Usage
@@ -69,11 +70,11 @@ These run against your workflow YAML files with no API access required.
 | `no-timeout` | medium | Job without `timeout-minutes` (default is 6 hours) |
 | `double-trigger` | high | Push and pull_request triggers overlap, causing duplicate runs |
 | `no-concurrency` | medium | Workflow triggered on push/PR with no concurrency + cancel-in-progress |
-| `cache-key-no-hash` | high | Cache key without `hashFiles` or dynamic component |
+| `cache-key-no-hash` | high/low | Cache key without `hashFiles` or dynamic component; missing `restore-keys` (low) |
 | `double-cache` | medium | Redundant cache mechanisms in the same job |
 | `install-no-cache` | medium | Package install without a cache mechanism |
 | `unneeded-full-checkout` | low | Full git history checkout without steps needing it |
-| `macos-not-needed` | high | macOS runner used without macOS-specific work |
+| `macos-not-needed` | medium | macOS runner used without macOS-specific work |
 | `false-serialization` | medium | Job depends on another but consumes nothing from it |
 | `repeated-setup` | medium | Multiple jobs repeat checkout + toolchain + build with no artifact hand-off |
 | `no-path-filter` | low (pedantic) | Push/PR workflow without path filters |
@@ -86,7 +87,7 @@ These require `--audit` and pull measured run data from the GitHub API.
 
 | ID | Severity | Description |
 |----|----------|-------------|
-| `critical-path` | info | Critical path through the job dependency graph |
+| `critical-path` | info/medium | Critical path through the job dependency graph (medium if >2× longest job) |
 | `flaky-or-hanging` | high | Job with high duration variance or frequent cancellations |
 | `queue-dominated` | medium | Jobs spend more time queued than running |
 | `setup-dominated` | medium | Setup steps consume most of job time |
@@ -94,14 +95,25 @@ These require `--audit` and pull measured run data from the GitHub API.
 
 ## Suppression
 
-Suppress a specific rule on a job or step by adding a comment on the same line or the line above:
+Suppress a specific rule on a job or step by adding a comment on the same line, on any line within the step's YAML, or on the line directly above:
+
+```yaml
+# ci-bottlenecks: ignore[unneeded-full-checkout]
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+```
 
 ```yaml
 steps:
-  - uses: actions/checkout@v4 # ci-bottlenecks: ignore[unneeded-full-checkout]
+  - name: Checkout
+    uses: actions/checkout@v4 # ci-bottlenecks: ignore[unneeded-full-checkout]
+    with:
+      fetch-depth: 0
 ```
 
-Suppress all rules on a line:
+Suppress all rules on a job:
 
 ```yaml
   build: # ci-bottlenecks: ignore
