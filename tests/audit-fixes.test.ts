@@ -25,8 +25,10 @@ function makeJob(name: string, startMin: number, endMin: number, overrides?: Par
     id: Math.floor(Math.random() * 100000),
     name,
     conclusion: "success",
+    createdAt: null,
     startedAt: new Date(base + startMin * 60000).toISOString(),
     completedAt: new Date(base + endMin * 60000).toISOString(),
+    runnerLabel: null,
     steps: [],
     ...overrides,
   };
@@ -71,8 +73,10 @@ describe("setup-dominated: does not classify by position", () => {
         headSha: `sha${i}`,
         jobs: [{
           id: i + 100, name: "build", conclusion: "success",
+          createdAt: null,
           startedAt: new Date(base).toISOString(),
           completedAt: new Date(base + 310_000).toISOString(),
+          runnerLabel: null,
           steps: makeSteps(),
         }],
       }),
@@ -328,8 +332,10 @@ describe("queue-dominated: uses runStartedAt for re-runs", () => {
         id: i + 100,
         name: "build",
         conclusion: "success",
+        createdAt: null,
         startedAt: new Date(base + 10 * 60000).toISOString(),
         completedAt: new Date(base + 15 * 60000).toISOString(),
+        runnerLabel: null,
         steps: [],
       }],
     }));

@@ -38,12 +38,15 @@ function mapStep(s: Record<string, unknown>): StepData {
 
 function mapJob(j: Record<string, unknown>): JobData {
   const rawSteps = (j.steps as Record<string, unknown>[]) ?? [];
+  const labels = j.labels as string[] | undefined;
   return {
     id: j.id as number,
     name: j.name as string,
     conclusion: (j.conclusion as string) ?? "",
-    startedAt: (j.started_at as string) ?? null,
-    completedAt: (j.completed_at as string) ?? null,
+    createdAt: (j.created_at as string) ?? (j.createdAt as string) ?? null,
+    startedAt: (j.started_at as string) ?? (j.startedAt as string) ?? null,
+    completedAt: (j.completed_at as string) ?? (j.completedAt as string) ?? null,
+    runnerLabel: labels && labels.length > 0 ? labels[0]! : (j.runner_label as string) ?? (j.runnerLabel as string) ?? null,
     steps: rawSteps.map(mapStep),
   };
 }
@@ -82,9 +85,9 @@ export async function fetchJobsForRun(nwo: string, runId: number): Promise<JobDa
   return jobs.map((j) => mapJob(j as Record<string, unknown>));
 }
 
-export function detectNwo(): string | null {
+export function detectNwo(cwd?: string): string | null {
   try {
-    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], cwd: cwd || undefined }).trim();
     if (!url) return null;
 
     const sshMatch = url.match(/git@[^:]+:(.+?)(?:\.git)?$/);

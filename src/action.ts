@@ -15,7 +15,7 @@ async function run() {
   const audit = getBooleanInput("audit");
   const pedantic = getBooleanInput("pedantic");
   const maxRuns = parseInt(getInput("runs") || "50", 10);
-  const failOn = (getInput("fail-on") || "high") as Severity;
+  const failOn = (getInput("fail-on") || "none") as Severity | "none";
   const formats = (getInput("format") || "text,summary,sarif")
     .split(",")
     .map((s) => s.trim());
@@ -91,8 +91,8 @@ async function run() {
     info: 3,
   };
 
-  const hasAboveThreshold = findings.some(
-    (f) => SEVERITY_ORDER[f.severity] <= SEVERITY_ORDER[failOn],
+  const hasAboveThreshold = failOn !== "none" && findings.some(
+    (f) => SEVERITY_ORDER[f.severity] <= SEVERITY_ORDER[failOn as Severity],
   );
 
   if (hasAboveThreshold) {

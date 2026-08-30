@@ -48,8 +48,12 @@ ci-bottlenecks [path] [options]
 | `--pedantic` | Enable pedantic rules | off |
 | `--runs N` | Maximum number of completed runs to sample for audit | 50 |
 | `--format text\|json\|sarif\|summary` | Output format (repeatable) | text |
-| `--fail-on high\|medium\|low\|info` | Minimum severity to fail the check | high |
+| `--fail-on high\|medium\|low\|info\|none` | Minimum severity to fail the check | none |
+| `--repo owner/name` | Override repository detection for audit mode | - |
+| `--record dir` | Write anonymized audit snapshots for eval fixtures | - |
 | `--sarif-output path` | Write SARIF to a file instead of stdout | - |
+| `-h, --help` | Show help and exit | - |
+| `--version` | Print version and exit | - |
 
 ### Exit codes
 
@@ -136,7 +140,7 @@ name: Release
 | `audit` | Enable audit tier (pulls measured data from GitHub API) | `false` |
 | `runs` | Maximum number of completed runs to sample for audit | `50` |
 | `pedantic` | Enable pedantic rules | `false` |
-| `fail-on` | Minimum severity to fail the check (`high`, `medium`, `low`, `info`) | `high` |
+| `fail-on` | Minimum severity to fail the check (`high`, `medium`, `low`, `info`, `none`) | `none` |
 | `format` | Output formats (comma-separated: `text`, `json`, `sarif`, `summary`) | `text,summary,sarif` |
 | `token` | GitHub token for API access (audit mode) | `${{ github.token }}` |
 

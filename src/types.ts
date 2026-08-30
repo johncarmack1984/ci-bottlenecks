@@ -134,8 +134,10 @@ export interface JobData {
   id: number;
   name: string;
   conclusion: string;
+  createdAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  runnerLabel: string | null;
   steps: StepData[];
 }
 

@@ -23,9 +23,9 @@ inputs:
     required: false
     default: "false"
   fail-on:
-    description: "Minimum severity to fail the check (high, medium, low, info)"
+    description: "Minimum severity to fail the check (high, medium, low, info, none)"
     required: false
-    default: "high"
+    default: "none"
   format:
     description: "Output formats (comma-separated: text, json, sarif, summary)"
     required: false

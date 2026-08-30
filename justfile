@@ -18,6 +18,9 @@ run *ARGS:
 audit *ARGS:
     bun run src/cli.ts --audit {{ARGS}}
 
+record DIR *ARGS:
+    bun run src/cli.ts --audit --record {{DIR}} {{ARGS}}
+
 eval:
     bun run src/eval.ts
 
