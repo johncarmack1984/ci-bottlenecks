@@ -1,0 +1,16 @@
+# eval: rule=flaky-or-hanging expect=fire kind=tp
+# why: bimodal duration distribution (8 fast + 2 slow) where p95 >= 3x median should fire
+# source: spec — p95 >= 3x median with min 5 samples
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - run: npm test

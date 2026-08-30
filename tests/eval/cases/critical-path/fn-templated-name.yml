@@ -1,0 +1,26 @@
+# eval: rule=critical-path expect=fire kind=fn status=xfail
+# why: name: with ${{ matrix.os }} goes through regex path but escaping bug re-escapes .* to \.\*, so no timing matches and totalDuration=0 suppresses the finding
+# source: regex escaping bug in matchJobDurations — char-by-char replace never sees ".*" as a unit
+name: CI
+on: [push]
+jobs:
+  setup:
+    name: "Setup ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "setting up"
+  lint:
+    name: "Lint ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: [setup]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - run: echo "linting"

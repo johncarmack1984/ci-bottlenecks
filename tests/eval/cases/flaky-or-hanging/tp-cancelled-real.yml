@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=fire kind=tp count=1 jobs=test
+# why: 2 of 10 runs have real job cancellation (run succeeded but job cancelled), 20% >= 10% threshold
+# source: spec -- cancelled jobs in non-cancelled runs
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

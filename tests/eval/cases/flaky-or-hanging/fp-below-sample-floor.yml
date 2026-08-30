@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=silent kind=fp
+# why: only 4 runs (below the 5-sample floor) so variance check is skipped entirely
+# source: spec -- durations.length < 5 means variance check skipped
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

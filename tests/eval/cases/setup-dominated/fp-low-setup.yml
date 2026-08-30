@@ -1,0 +1,13 @@
+# eval: rule=setup-dominated expect=silent kind=fp
+# why: only 15% of job time is setup (1.5 of 10min), well below 50% threshold
+# source: typical workflow where actual work dominates
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+      - run: npm run build

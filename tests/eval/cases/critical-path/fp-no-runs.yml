@@ -1,0 +1,16 @@
+# eval: rule=critical-path expect=silent kind=fp
+# why: empty runs array should produce no findings
+# source: edge case — no completed runs in sample
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: echo build

@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=silent kind=miss
+# why: 5 samples with 1 outlier at 3.1x median, but p95 interpolation dampens it to 2.68x (below 3x threshold)
+# source: thin sample floor effect -- 5 samples not enough to surface a real outlier via p95
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

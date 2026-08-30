@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=fire kind=tp count=1 jobs=test
+# why: bimodal duration distribution (8x10min + 2x40min) where p95 = 4.0x median should fire
+# source: spec -- p95 >= 3x median with min 5 samples
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

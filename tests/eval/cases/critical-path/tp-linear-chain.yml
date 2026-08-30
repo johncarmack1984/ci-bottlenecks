@@ -1,0 +1,24 @@
+# eval: rule=critical-path expect=fire kind=tp count=1
+# why: linear chain build->test->deploy; critical path=9min, longest=5min, 9<10 so severity info
+# source: basic DAG pattern — fully serial pipeline
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - run: cargo test
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [test]
+    steps:
+      - run: ./deploy.sh

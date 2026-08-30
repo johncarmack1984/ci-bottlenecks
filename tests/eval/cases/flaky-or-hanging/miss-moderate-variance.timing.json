@@ -1,0 +1,124 @@
+{
+  "runs": [
+    {
+      "id": 1,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b001000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:05:00Z",
+      "jobs": [
+        {
+          "id": 1,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-01T00:00:00Z",
+          "completedAt": "2024-01-01T00:05:00Z",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b002000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z",
+      "updatedAt": "2024-01-02T00:05:00Z",
+      "jobs": [
+        {
+          "id": 2,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-02T00:00:00Z",
+          "completedAt": "2024-01-02T00:05:00Z",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b003000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z",
+      "updatedAt": "2024-01-03T00:05:00Z",
+      "jobs": [
+        {
+          "id": 3,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-03T00:00:00Z",
+          "completedAt": "2024-01-03T00:05:00Z",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b004000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-04T00:00:00Z",
+      "runStartedAt": "2024-01-04T00:00:00Z",
+      "updatedAt": "2024-01-04T00:05:00Z",
+      "jobs": [
+        {
+          "id": 4,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-04T00:00:00Z",
+          "completedAt": "2024-01-04T00:05:00Z",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b005000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-05T00:00:00Z",
+      "runStartedAt": "2024-01-05T00:00:00Z",
+      "updatedAt": "2024-01-05T00:06:00Z",
+      "jobs": [
+        {
+          "id": 5,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-05T00:00:00Z",
+          "completedAt": "2024-01-05T00:06:00Z",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "CI",
+      "workflowId": 1,
+      "headSha": "b006000000000000000000000000000000000000",
+      "conclusion": "success",
+      "createdAt": "2024-01-06T00:00:00Z",
+      "runStartedAt": "2024-01-06T00:00:00Z",
+      "updatedAt": "2024-01-06T00:12:30Z",
+      "jobs": [
+        {
+          "id": 6,
+          "name": "test",
+          "conclusion": "success",
+          "startedAt": "2024-01-06T00:00:00Z",
+          "completedAt": "2024-01-06T00:12:30Z",
+          "steps": []
+        }
+      ]
+    }
+  ]
+}

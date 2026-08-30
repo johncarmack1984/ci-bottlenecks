@@ -1,0 +1,11 @@
+# eval: rule=queue-dominated expect=silent kind=fp
+# why: jobs start at the same time as run creation so queue time is zero and not collected
+# source: edge case — zero queue time means queueTimes array stays empty
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build

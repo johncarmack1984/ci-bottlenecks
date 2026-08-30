@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=silent kind=fp
+# why: 10 consistent runs with ~1% jitter should not fire (p95/median ratio near 1.0)
+# source: healthy CI pipeline pattern
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

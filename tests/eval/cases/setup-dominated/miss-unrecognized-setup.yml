@@ -1,0 +1,12 @@
+# eval: rule=setup-dominated expect=silent kind=miss
+# why: "Prepare environment" is setup in spirit but does not match the setup regex
+# source: coverage gap — step names outside the recognized keyword set
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: ./prepare-env.sh
+      - run: npm test

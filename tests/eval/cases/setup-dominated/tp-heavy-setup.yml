@@ -1,0 +1,13 @@
+# eval: rule=setup-dominated expect=fire kind=tp count=1 jobs=test
+# why: 80% of job time is in setup steps (8 of 10min), well above 50% threshold
+# source: basic pattern — heavy install dominates
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install
+      - run: npm test

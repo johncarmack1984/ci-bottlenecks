@@ -1,0 +1,24 @@
+# eval: rule=critical-path expect=fire kind=tp count=1
+# why: three equal-duration jobs in series; critical path 9min > longest 3min * 2, so severity medium
+# source: serialization-dominates heuristic — pipeline where no single job dominates
+name: CI
+on: [push]
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [compile]
+    steps:
+      - run: cargo test
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [test]
+    steps:
+      - run: ./deploy.sh

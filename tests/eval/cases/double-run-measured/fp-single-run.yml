@@ -1,0 +1,12 @@
+# eval: rule=double-run-measured expect=silent kind=fp
+# why: only 1 run total means no group has 2+ runs to compare
+# source: normal single-trigger workflow execution
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

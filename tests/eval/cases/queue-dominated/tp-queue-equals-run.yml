@@ -1,0 +1,11 @@
+# eval: rule=queue-dominated expect=fire kind=tp count=1
+# why: median queue 10 min equals median run 10 min (100%) well above 50% threshold
+# source: extreme queue-dominated pattern — queue time matches run time
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build

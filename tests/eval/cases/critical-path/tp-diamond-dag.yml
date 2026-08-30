@@ -1,0 +1,30 @@
+# eval: rule=critical-path expect=fire kind=tp count=1
+# why: diamond DAG build->[test,lint]->deploy; critical path build->test->deploy=7min > 3min*2, severity medium
+# source: diamond DAG pattern — parallel legs with a join point
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - run: cargo test
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - run: cargo clippy
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [test, lint]
+    steps:
+      - run: ./deploy.sh

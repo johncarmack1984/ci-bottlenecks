@@ -1,0 +1,21 @@
+# eval: rule=critical-path expect=fire kind=tp count=1
+# why: matrix job with no name: field; API reports "test (ubuntu-latest)" matched via prefix; path=5min, longest=3min, 5<6 so info
+# source: matrix prefix matching — unnamed matrix legs reported as "jobId (value)"
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: [build]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - run: cargo test

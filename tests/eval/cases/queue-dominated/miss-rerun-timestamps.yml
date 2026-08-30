@@ -1,0 +1,11 @@
+# eval: rule=queue-dominated expect=silent kind=miss
+# why: re-runs have runStartedAt far after createdAt; max(createdAt, runStartedAt) fix yields correct effective start so queue is only 1 min (10%) not 61 min
+# source: edge case — re-run timestamp handling with effectiveStart = max(createdAt, runStartedAt)
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build

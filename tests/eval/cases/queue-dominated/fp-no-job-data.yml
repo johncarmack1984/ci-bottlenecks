@@ -1,0 +1,11 @@
+# eval: rule=queue-dominated expect=silent kind=fp
+# why: runs with empty jobs arrays produce no start/end timestamps so rule cannot compute queue time
+# source: edge case — no job data available in any run
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build

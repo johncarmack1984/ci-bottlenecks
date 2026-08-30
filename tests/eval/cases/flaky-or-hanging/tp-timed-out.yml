@@ -1,0 +1,12 @@
+# eval: rule=flaky-or-hanging expect=fire kind=tp count=1 jobs=test
+# why: 2 of 10 runs timed out (20% >= 10% threshold) should fire
+# source: spec -- timed_out job conclusions in the sample
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

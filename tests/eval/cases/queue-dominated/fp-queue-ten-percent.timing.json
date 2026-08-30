@@ -1,0 +1,44 @@
+{
+  "runs": [
+    {
+      "id": 1, "name": "CI", "workflowId": 1, "headSha": "aaa0001000000000000000000000000000000000",
+      "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:11:00Z",
+      "jobs": [
+        { "id": 1, "name": "build", "conclusion": "success", "startedAt": "2024-01-01T00:01:00Z", "completedAt": "2024-01-01T00:11:00Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 2, "name": "CI", "workflowId": 1, "headSha": "aaa0002000000000000000000000000000000000",
+      "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:11:00Z",
+      "jobs": [
+        { "id": 2, "name": "build", "conclusion": "success", "startedAt": "2024-01-02T00:01:00Z", "completedAt": "2024-01-02T00:11:00Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 3, "name": "CI", "workflowId": 1, "headSha": "aaa0003000000000000000000000000000000000",
+      "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:11:00Z",
+      "jobs": [
+        { "id": 3, "name": "build", "conclusion": "success", "startedAt": "2024-01-03T00:01:00Z", "completedAt": "2024-01-03T00:11:00Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 4, "name": "CI", "workflowId": 1, "headSha": "aaa0004000000000000000000000000000000000",
+      "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z",
+      "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:11:00Z",
+      "jobs": [
+        { "id": 4, "name": "build", "conclusion": "success", "startedAt": "2024-01-04T00:01:00Z", "completedAt": "2024-01-04T00:11:00Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 5, "name": "CI", "workflowId": 1, "headSha": "aaa0005000000000000000000000000000000000",
+      "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z",
+      "runStartedAt": "2024-01-05T00:00:00Z", "updatedAt": "2024-01-05T00:11:00Z",
+      "jobs": [
+        { "id": 5, "name": "build", "conclusion": "success", "startedAt": "2024-01-05T00:01:00Z", "completedAt": "2024-01-05T00:11:00Z", "steps": [] }
+      ]
+    }
+  ]
+}

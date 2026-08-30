@@ -1,0 +1,8 @@
+{
+  "runs": [
+    { "id": 1, "name": "CI", "workflowId": 1, "headSha": "a1", "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z", "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:10:00Z", "jobs": [{ "id": 1, "name": "test", "conclusion": "success", "startedAt": "2024-01-01T00:00:30Z", "completedAt": "2024-01-01T00:10:30Z", "steps": [] }] },
+    { "id": 2, "name": "CI", "workflowId": 1, "headSha": "a2", "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z", "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:10:00Z", "jobs": [{ "id": 2, "name": "test", "conclusion": "success", "startedAt": "2024-01-02T00:00:30Z", "completedAt": "2024-01-02T00:10:30Z", "steps": [] }] },
+    { "id": 3, "name": "CI", "workflowId": 1, "headSha": "a3", "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z", "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:10:00Z", "jobs": [{ "id": 3, "name": "test", "conclusion": "success", "startedAt": "2024-01-03T00:00:30Z", "completedAt": "2024-01-03T00:10:30Z", "steps": [] }] },
+    { "id": 4, "name": "CI", "workflowId": 1, "headSha": "a4", "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z", "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:45:00Z", "jobs": [{ "id": 4, "name": "test", "conclusion": "success", "startedAt": "2024-01-04T00:00:30Z", "completedAt": "2024-01-04T00:40:30Z", "steps": [] }] }
+  ]
+}

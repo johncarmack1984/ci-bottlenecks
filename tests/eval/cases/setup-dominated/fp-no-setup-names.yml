@@ -1,0 +1,13 @@
+# eval: rule=setup-dominated expect=silent kind=fp
+# why: no step names match the setup regex, so setupTotal is 0%
+# source: workflow with no recognizable setup steps
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: npm test
+      - run: npm run build
+      - run: npm run deploy

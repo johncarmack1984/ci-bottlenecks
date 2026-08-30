@@ -1,0 +1,18 @@
+# eval: rule=critical-path expect=silent kind=fp
+# why: jobs with null startedAt/completedAt produce no durations; totalDuration=0 suppresses the finding
+# source: edge case — pending or cancelled jobs with no timing data
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - run: cargo test

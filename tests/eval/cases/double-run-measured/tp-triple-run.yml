@@ -1,0 +1,12 @@
+# eval: rule=double-run-measured expect=fire kind=tp count=1
+# why: 3 runs on same SHA within 2 minutes should produce 1 finding
+# source: triple-trigger scenario where only first-second gap matters
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

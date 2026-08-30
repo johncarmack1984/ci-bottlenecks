@@ -1,0 +1,13 @@
+# eval: rule=setup-dominated expect=fire kind=tp count=1 jobs=build
+# why: 60% of job time is setup (toolchain install), above 50% threshold
+# source: Rust toolchain pattern — setup + toolchain keywords
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build

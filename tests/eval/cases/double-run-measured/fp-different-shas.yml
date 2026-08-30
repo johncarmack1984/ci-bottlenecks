@@ -1,0 +1,12 @@
+# eval: rule=double-run-measured expect=silent kind=fp
+# why: 2 runs with different headShas form separate groups, each with only 1 run
+# source: normal sequential commits triggering separate runs
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

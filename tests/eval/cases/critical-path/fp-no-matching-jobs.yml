@@ -1,0 +1,18 @@
+# eval: rule=critical-path expect=silent kind=fp
+# why: timing job names ("compile", "verify") don't match workflow job ids ("build", "test"); all durations 0 suppresses finding
+# source: edge case — renamed workflow where timing data is from the old job names
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - run: cargo test

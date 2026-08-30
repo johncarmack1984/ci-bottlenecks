@@ -1,0 +1,43 @@
+{
+  "runs": [
+    {
+      "id": 1, "name": "CI", "workflowId": 1, "headSha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:10:00Z",
+      "jobs": [{
+        "id": 1, "name": "test", "conclusion": "success",
+        "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:10:00Z",
+        "steps": [
+          { "name": "Prepare environment", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:06:00Z" },
+          { "name": "Run tests", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:06:00Z", "completedAt": "2024-01-01T00:10:00Z" }
+        ]
+      }]
+    },
+    {
+      "id": 2, "name": "CI", "workflowId": 1, "headSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:10:00Z",
+      "jobs": [{
+        "id": 2, "name": "test", "conclusion": "success",
+        "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:10:00Z",
+        "steps": [
+          { "name": "Prepare environment", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:06:00Z" },
+          { "name": "Run tests", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:06:00Z", "completedAt": "2024-01-02T00:10:00Z" }
+        ]
+      }]
+    },
+    {
+      "id": 3, "name": "CI", "workflowId": 1, "headSha": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:10:00Z",
+      "jobs": [{
+        "id": 3, "name": "test", "conclusion": "success",
+        "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:10:00Z",
+        "steps": [
+          { "name": "Prepare environment", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:06:00Z" },
+          { "name": "Run tests", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:06:00Z", "completedAt": "2024-01-03T00:10:00Z" }
+        ]
+      }]
+    }
+  ]
+}
