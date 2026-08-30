@@ -9530,6 +9530,45 @@ function formatJson(findings) {
   return JSON.stringify(findings, null, 2) + `
 `;
 }
+// package.json
+var package_default = {
+  name: "ci-bottlenecks",
+  version: "0.1.3",
+  description: "Find performance problems in GitHub Actions pipelines",
+  type: "module",
+  main: "dist/index.js",
+  bin: {
+    "ci-bottlenecks": "dist/cli.js"
+  },
+  scripts: {
+    build: `bun build src/action.ts --target=node --outfile dist/index.js && bun build src/cli.ts --target=node --outfile dist/cli.js && node -e "const fs=require('fs'); const f='dist/cli.js'; const c=fs.readFileSync(f,'utf8'); if(!c.startsWith('#!'))fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c); fs.chmodSync(f,0o755)"`,
+    test: "bun test",
+    lint: "tsc --noEmit",
+    check: "bun run lint && bun test && bun run build"
+  },
+  keywords: [
+    "github-actions",
+    "ci",
+    "performance",
+    "linter"
+  ],
+  license: "MIT",
+  author: "John Carmack",
+  repository: {
+    type: "git",
+    url: "https://github.com/johncarmack1984/ci-bottlenecks"
+  },
+  devDependencies: {
+    "@types/bun": "latest",
+    typescript: "^5.8.0"
+  },
+  dependencies: {
+    yaml: "^2.7.0"
+  }
+};
+
+// src/version.ts
+var VERSION = package_default.version;
 
 // src/format/sarif.ts
 var SEVERITY_TO_LEVEL = {
@@ -9594,7 +9633,7 @@ Remediation: ${f.remediation}`
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.2",
+            version: VERSION,
             informationUri: "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors
           }
@@ -9862,7 +9901,6 @@ async function loadAuditData(nwo, workflows, maxRuns, log) {
 }
 
 // src/cli.ts
-var VERSION = "0.1.2";
 var VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
 var VALID_SEVERITIES = new Set(["high", "medium", "low", "info", "none"]);
 function printUsage() {

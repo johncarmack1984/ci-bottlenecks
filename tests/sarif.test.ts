@@ -1,3 +1,4 @@
+import pkg from "../package.json";
 import { describe, it, expect } from "bun:test";
 import { formatSarif } from "../src/format/sarif.ts";
 import { allRules } from "../src/rules/index.ts";
@@ -13,7 +14,7 @@ describe("SARIF output", () => {
   it("has correct tool name", () => {
     const sarif = formatSarif([], allRules);
     expect(sarif.runs[0]!.tool.driver.name).toBe("ci-bottlenecks");
-    expect(sarif.runs[0]!.tool.driver.version).toBe("0.1.1");
+    expect(sarif.runs[0]!.tool.driver.version).toBe(pkg.version);
   });
 
   it("includes all rules", () => {

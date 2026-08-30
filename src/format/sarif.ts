@@ -1,4 +1,5 @@
 import type { Finding, Rule, Severity } from "../types.ts";
+import { VERSION } from "../version.ts";
 
 const SEVERITY_TO_LEVEL: Record<Severity, string> = {
   high: "error",
@@ -108,7 +109,7 @@ export function formatSarif(findings: Finding[], rules: Rule[]): SarifReport {
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.2",
+            version: VERSION,
             informationUri:
               "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors,
