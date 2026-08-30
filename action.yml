@@ -15,9 +15,9 @@ inputs:
     required: false
     default: "false"
   runs:
-    description: "Maximum number of completed runs to sample for audit"
+    description: "Maximum completed runs to sample per workflow for audit"
     required: false
-    default: "50"
+    default: "25"
   pedantic:
     description: "Enable pedantic rules"
     required: false
@@ -42,5 +42,5 @@ outputs:
     description: "Path to the generated SARIF file"
 
 runs:
-  using: "node20"
+  using: "node24"
   main: "dist/index.js"
