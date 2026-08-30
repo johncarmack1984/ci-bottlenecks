@@ -1,5 +1,5 @@
-# eval: rule=macos-not-needed expect=silent kind=fn status=xfail
-# why: job cross-compiles for Linux on macOS — legitimate but wasteful, rule fires incorrectly
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: single macOS job with no Linux twin — macOS is the project's platform regardless of cross-compilation
 # source: cross-compilation scenario where macOS is used but not needed
 name: Cross Compile
 on:

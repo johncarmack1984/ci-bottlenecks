@@ -1,7 +1,7 @@
-# eval: rule=macos-not-needed expect=fire kind=tp
-# why: macos-13 with only echo — no macOS work at all, specific runner version makes it worse
-# source: placeholder or template job left on macOS
-name: Echo on macOS 13
+# eval: rule=macos-not-needed expect=fire kind=tp jobs=docs
+# why: docs job on macOS with a Linux twin — documentation generation has no platform dependency
+# source: doc generation jobs that waste macOS minutes
+name: CI
 on:
   push:
     branches: [main]
@@ -9,8 +9,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  placeholder:
+  docs:
     runs-on: macos-13
     timeout-minutes: 30
     steps:
-      - run: echo hello
+      - uses: actions/checkout@v4
+      - run: npm run docs
+  docs-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run docs

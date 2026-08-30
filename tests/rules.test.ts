@@ -364,16 +364,21 @@ jobs:
 });
 
 describe("macos-not-needed", () => {
-  it("flags macos runner with no macos work", () => {
+  it("flags lint-shaped macos job with linux twin", () => {
     const f = findByRule(check(`
 name: T
 on: push
 jobs:
-  test:
+  lint:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - run: npm test
+      - run: npm run lint
+  lint-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: npm run lint
 `), "macos-not-needed");
     expect(f.length).toBe(1);
   });

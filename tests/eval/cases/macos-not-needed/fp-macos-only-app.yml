@@ -1,0 +1,29 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: clippy and test run on macOS because the app targets macOS — no Linux twin runs the same toolchain, so macOS is the project's platform
+# source: message-to-pdf ci.yml pattern (macOS-only Tauri app with biome on ubuntu)
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx biome check .
+  clippy:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo clippy --all-targets
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test

@@ -1,7 +1,7 @@
-# eval: rule=macos-not-needed expect=fire kind=tp
-# why: macos-latest with only cargo test — Rust tests run fine on Linux for most crates
-# source: common misconfiguration in Rust projects
-name: Cargo Test on macOS
+# eval: rule=macos-not-needed expect=fire kind=tp jobs=fmt
+# why: fmt on macOS with a Linux twin — cargo fmt produces identical results on any platform
+# source: format check jobs that waste macOS minutes
+name: CI
 on:
   push:
     branches: [main]
@@ -9,10 +9,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  test:
+  fmt:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test
+      - run: cargo fmt --check
+  fmt-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo fmt --check

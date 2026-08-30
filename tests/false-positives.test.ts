@@ -384,17 +384,22 @@ jobs:
   });
 });
 
-describe("macos-not-needed: severity is medium", () => {
-  it("reports medium severity when firing", () => {
+describe("macos-not-needed: severity is medium for lint-shaped", () => {
+  it("reports medium severity for lint-shaped jobs with linux twin", () => {
     const f = findByRule(check(`
 name: CI
 on: push
 jobs:
-  test:
+  lint:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - run: npm test
+      - run: npm run lint
+  lint-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: npm run lint
 `), "macos-not-needed");
     expect(f.length).toBe(1);
     expect(f[0]!.severity).toBe("medium");
