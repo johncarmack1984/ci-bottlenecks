@@ -1,0 +1,14 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: Swatinem/rust-cache provides Rust dependency caching — cargo build is covered
+# source: rule spec — rust-cache is a recognized cache provider for Rust
+name: cargo build with rust-cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build
+      - run: cargo test

@@ -1,0 +1,23 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer introspects all dependencies via toJSON(needs)
+# source: toJSON(needs) detection
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    if: always()
+    steps:
+      - run: echo '${{ toJSON(needs) }}'

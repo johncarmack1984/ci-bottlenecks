@@ -1,0 +1,18 @@
+# eval: rule=no-timeout expect=fire kind=tp
+# why: a workflow_call-triggered workflow's jobs are real jobs that should have timeout-minutes
+# source: reusable workflow pattern from GitHub docs
+name: Reusable Build
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --target ${{ inputs.target }}

@@ -1,0 +1,14 @@
+# ci-bottlenecks: ignore
+# eval: rule=no-timeout expect=silent kind=fp
+# why: file-level suppression comment at top of file should suppress all rules for the entire workflow
+# source: suppression syntax documented in README
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

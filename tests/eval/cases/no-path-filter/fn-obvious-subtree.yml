@@ -1,0 +1,19 @@
+# eval: rule=no-path-filter expect=silent kind=fn status=xfail pedantic=true
+# why: all run commands reference a single subdirectory (frontend/) suggesting an obvious subtree focus, but the heuristic is not implemented — rule fires because push has no paths and companion has path filters
+# source: rule spec — "obvious subtree focus" heuristic not yet implemented
+name: Obvious subtree focus
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run build
+      - run: cd frontend && npm test

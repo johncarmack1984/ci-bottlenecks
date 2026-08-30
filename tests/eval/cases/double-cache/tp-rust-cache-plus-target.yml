@@ -1,0 +1,18 @@
+# eval: rule=double-cache expect=fire kind=tp count=1
+# why: Swatinem/rust-cache already handles the target/ directory — a manual actions/cache for target/ is redundant
+# source: rule spec — rust-cache + manual target directory cache
+name: Rust cache with manual target cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          key: target-${{ hashFiles('Cargo.lock') }}
+          path: target/
+          restore-keys: target-
+      - run: cargo build

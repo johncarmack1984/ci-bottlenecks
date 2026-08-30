@@ -1,0 +1,16 @@
+# eval: rule=macos-not-needed expect=fire kind=tp
+# why: macos-13 with only echo — no macOS work at all, specific runner version makes it worse
+# source: placeholder or template job left on macOS
+name: Echo on macOS 13
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  placeholder:
+    runs-on: macos-13
+    timeout-minutes: 30
+    steps:
+      - run: echo hello

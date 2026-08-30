@@ -1,0 +1,13 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: npm install -g is a global tool install, not a project dependency install — excluded by the regex
+# source: rule spec — global installs are not dependency installs
+name: npm install -g global tool
+on: workflow_dispatch
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g vercel
+      - run: vercel deploy --prod

@@ -1,0 +1,21 @@
+# eval: rule=unneeded-full-checkout expect=silent kind=fp
+# why: SonarCloud needs full history for blame-based new-code detection
+# source: code quality tooling
+name: SonarCloud
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -1,0 +1,16 @@
+# eval: rule=no-timeout expect=fire kind=miss
+# why: Job inside a reusable workflow definition (workflow_call trigger) might not need its own timeout if the caller sets one, but the rule currently fires because the job itself has no timeout-minutes
+# source: Reusable workflow pattern where caller controls timeout
+name: Reusable Build
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '18'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

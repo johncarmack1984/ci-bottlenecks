@@ -1,0 +1,18 @@
+# eval: rule=macos-not-needed expect=fire kind=tp
+# why: macos-latest with only cargo test — Rust tests run fine on Linux for most crates
+# source: common misconfiguration in Rust projects
+name: Cargo Test on macOS
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test

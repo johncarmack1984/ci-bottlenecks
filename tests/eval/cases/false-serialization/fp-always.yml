@@ -1,0 +1,28 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer has if: always() — it is a status aggregator, not a pure CI job
+# source: always() in if disqualifies job from pure CI classification
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: cargo test
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, test]
+    if: always()
+    steps:
+      - run: echo "Build and test completed"

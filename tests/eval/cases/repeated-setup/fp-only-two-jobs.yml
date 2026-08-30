@@ -1,0 +1,23 @@
+# eval: rule=repeated-setup expect=silent kind=fp
+# why: only 2 jobs with same setup — below the threshold of 3 (2 is normal test+lint)
+# source: rule spec — threshold is 3+ jobs
+name: Only two jobs
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo test
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo clippy -- -D warnings

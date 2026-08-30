@@ -1,0 +1,18 @@
+# eval: rule=no-path-filter expect=fire kind=tp pedantic=true
+# why: workflow has push trigger with no path filters while companion workflow uses them
+# source: rule spec — fires when push/PR has no paths and another workflow does
+name: Push without path filter
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test

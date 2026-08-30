@@ -1,0 +1,18 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Expression-based cancel-in-progress using ${{ counts as configured
+# source: GitHub docs pattern for protecting main branch builds while canceling feature branch runs
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

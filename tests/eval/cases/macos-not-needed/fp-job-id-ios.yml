@@ -1,0 +1,17 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: job id containing "ios" signals intentional Apple-platform targeting
+# source: job id/name keyword allowlist
+name: iOS Build
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build

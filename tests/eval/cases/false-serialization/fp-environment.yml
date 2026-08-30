@@ -1,0 +1,26 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer has environment: production — not a pure CI job, serialization is valid
+# source: environment field disqualifies job from pure CI classification
+name: Deploy
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+  staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+      - run: npm run test:integration

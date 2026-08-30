@@ -1,0 +1,17 @@
+# eval: rule=no-concurrency expect=fire kind=miss
+# why: Concurrency group set but cancel-in-progress key is absent entirely — group alone queues runs without canceling, which still wastes CI minutes. The rule fires because it requires explicit cancel-in-progress (true) or deliberate serialization (false), but omitting the key is an ambiguous middle ground the rule does not distinguish from no concurrency at all.
+# source: Partial concurrency configuration — group without cancel behavior specified
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

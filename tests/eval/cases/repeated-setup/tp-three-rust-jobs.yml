@@ -1,0 +1,32 @@
+# eval: rule=repeated-setup expect=fire kind=tp count=1
+# why: 3 Rust jobs on ubuntu-latest all doing checkout + rust-toolchain + cargo build/test with no artifact hand-off
+# source: rule spec — threshold is 3+ jobs with same toolchain setup
+name: Three Rust jobs
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo test
+
+  clippy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo clippy -- -D warnings
+
+  fmt-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo fmt -- --check

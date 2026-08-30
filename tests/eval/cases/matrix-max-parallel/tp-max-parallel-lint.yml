@@ -1,0 +1,20 @@
+# eval: rule=matrix-max-parallel expect=fire kind=tp pedantic=true
+# why: matrix with max-parallel: 1 and only lint steps — serializing lint across toolchains is unnecessary
+# source: rule spec — fires on max-parallel without rate-limited step
+name: Max parallel on lint
+on: workflow_dispatch
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 1
+      matrix:
+        toolchain: [stable, nightly]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo clippy -- -D warnings
+      - run: cargo fmt -- --check

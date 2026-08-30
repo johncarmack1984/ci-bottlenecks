@@ -1,0 +1,18 @@
+# eval: rule=macos-not-needed expect=silent kind=fn status=xfail
+# why: job cross-compiles for Linux on macOS — legitimate but wasteful, rule fires incorrectly
+# source: cross-compilation scenario where macOS is used but not needed
+name: Cross Compile
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  cross-build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add x86_64-unknown-linux-gnu
+      - run: cargo build --target x86_64-unknown-linux-gnu

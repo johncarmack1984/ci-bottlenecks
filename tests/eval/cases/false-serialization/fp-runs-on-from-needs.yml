@@ -1,0 +1,26 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer uses needs.setup.outputs.runner in runs-on — genuine dependency
+# source: needs.X reference in runs-on detection
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      runner: ${{ steps.pick.outputs.runner }}
+    steps:
+      - id: pick
+        run: echo "runner=self-hosted" >> $GITHUB_OUTPUT
+  build:
+    runs-on: ${{ needs.setup.outputs.runner }}
+    timeout-minutes: 30
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build

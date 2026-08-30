@@ -1,0 +1,13 @@
+# eval: rule=unpinned-action expect=silent kind=fp
+# why: action pinned to a full 40-char SHA is immutable — SHA_RE matches
+# source: rule spec — full SHA pins are safe
+name: Action at full SHA
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8
+      - run: echo done

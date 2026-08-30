@@ -1,0 +1,18 @@
+# eval: rule=double-cache expect=fire kind=tp count=1
+# why: Swatinem/rust-cache already handles ~/.cargo/registry — a manual actions/cache for that path is redundant
+# source: rule spec — rust-cache + manual cargo registry cache
+name: Rust cache with manual registry cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          key: registry-${{ hashFiles('Cargo.lock') }}
+          path: ~/.cargo/registry
+          restore-keys: registry-
+      - run: cargo build

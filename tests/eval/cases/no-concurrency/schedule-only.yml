@@ -1,0 +1,14 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Schedule-only trigger does not benefit from cancel-in-progress (no rapid re-pushes)
+# source: Cron-based nightly test workflows
+name: Nightly
+on:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

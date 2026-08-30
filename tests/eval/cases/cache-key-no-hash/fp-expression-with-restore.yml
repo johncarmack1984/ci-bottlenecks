@@ -1,0 +1,18 @@
+# eval: rule=cache-key-no-hash expect=silent kind=fp
+# why: actions/cache with ${{ }} expression in key and restore-keys present should not fire
+# source: rule spec — expression-based keys count as dynamic
+name: Expression key with restore-keys
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          path: ~/.cargo
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - run: cargo build

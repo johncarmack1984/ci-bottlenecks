@@ -1,0 +1,24 @@
+# eval: rule=false-serialization expect=fire kind=tp jobs=lint
+# why: lint depends on build but linting is independent — wastes time waiting
+# source: common pattern where lint is serialized behind build for no reason
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo clippy -- -D warnings

@@ -1,0 +1,18 @@
+# eval: rule=double-cache expect=fire kind=tp count=1
+# why: mozilla-actions/sccache-action manages its own cache — a manual actions/cache targeting sccache paths is redundant
+# source: rule spec — sccache-action + manual sccache cache
+name: sccache with manual sccache cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.4
+      - uses: actions/cache@v4
+        with:
+          key: sccache-${{ hashFiles('Cargo.lock') }}
+          path: ~/.cache/sccache
+          restore-keys: sccache-
+      - run: cargo build

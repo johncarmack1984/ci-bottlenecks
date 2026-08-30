@@ -1,0 +1,17 @@
+# eval: rule=matrix-max-parallel expect=fire kind=miss pedantic=true
+# why: max-parallel set to match self-hosted runner pool size — correct to fire (no deploy step) but user has a legitimate reason to throttle. Rule cannot distinguish this from unnecessary throttling.
+# source: rule spec — self-hosted runner concurrency limits are a known edge case
+name: Self-hosted runner limits
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 2
+      matrix:
+        suite: [unit, integration, e2e, smoke]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:${{ matrix.suite }}

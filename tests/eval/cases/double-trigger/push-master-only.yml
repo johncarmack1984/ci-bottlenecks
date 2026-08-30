@@ -1,0 +1,18 @@
+# eval: rule=double-trigger expect=silent kind=fp
+# why: Push restricted to master only — legacy default branch name is also exempted
+# source: Older repos using master as default branch
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

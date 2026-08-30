@@ -1,0 +1,20 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: producer is a reusable workflow call — opaque, may produce outputs or artifacts
+# source: reusable workflow (job.uses) exemption
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

@@ -1,0 +1,14 @@
+# eval: rule=no-timeout expect=fire kind=tp
+# why: a job with an empty steps array is valid YAML but still has no timeout — the rule should fire
+# source: cross-cutting edge case — empty steps list
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: []

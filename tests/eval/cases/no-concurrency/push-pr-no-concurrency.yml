@@ -1,0 +1,15 @@
+# eval: rule=no-concurrency expect=fire kind=tp
+# why: Both push and pull_request triggers with no concurrency at all
+# source: Combined CI workflow missing concurrency
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

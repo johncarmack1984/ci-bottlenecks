@@ -1,0 +1,17 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: xcodebuild is macOS-only tooling
+# source: macOS command allowlist
+name: Xcode Build
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -project MyApp.xcodeproj -scheme MyApp build

@@ -1,0 +1,19 @@
+# eval: rule=matrix-max-parallel expect=silent kind=fp pedantic=true
+# why: max-parallel is set but step uses a publish action — rate limiting publishes is legitimate
+# source: rule spec — skips jobs with deploy/publish/release/push steps
+name: Max parallel with publish action
+on: workflow_dispatch
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 1
+      matrix:
+        package: [core, utils, cli]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - uses: npm-publish/action@v2
+        with:
+          package: packages/${{ matrix.package }}

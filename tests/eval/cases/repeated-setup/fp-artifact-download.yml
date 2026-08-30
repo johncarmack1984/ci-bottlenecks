@@ -1,0 +1,35 @@
+# eval: rule=repeated-setup expect=silent kind=fp
+# why: 3 jobs but one downloads artifacts — the downloading job is excluded from grouping, leaving only 2 in the group
+# source: rule spec — skips jobs with artifact download
+name: Artifact download breaks group
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo test
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - run: cargo clippy -- -D warnings
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+      - run: cargo build
+      - run: cargo test --features integration

@@ -1,0 +1,30 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: publish is not a pure CI job — waiting for build and test is correct
+# source: deploy/publish/release pattern exclusion
+name: Release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, test]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo publish

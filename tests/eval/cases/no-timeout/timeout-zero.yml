@@ -1,0 +1,17 @@
+# eval: rule=no-timeout expect=silent kind=fp
+# why: timeout-minutes: 0 is technically set (non-null), even if unusual
+# source: Edge case — zero is a distinct value from unset
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 0
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

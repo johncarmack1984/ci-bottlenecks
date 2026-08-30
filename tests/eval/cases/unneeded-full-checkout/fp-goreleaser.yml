@@ -1,0 +1,22 @@
+# eval: rule=unneeded-full-checkout expect=silent kind=fp
+# why: goreleaser needs full history for changelog and tag-based releases
+# source: Go release tooling
+name: GoReleaser
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean

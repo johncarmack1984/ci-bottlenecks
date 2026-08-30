@@ -1,0 +1,20 @@
+# eval: rule=matrix-max-parallel expect=fire kind=tp pedantic=true
+# why: matrix with max-parallel: 2 and only test steps — no deploy/publish justification for throttling
+# source: rule spec — fires on max-parallel without rate-limited step
+name: Max parallel on tests
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 2
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm test

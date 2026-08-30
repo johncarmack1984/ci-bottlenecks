@@ -1,0 +1,30 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: producer uploads artifact, consumer downloads by exact name — real data handoff
+# source: artifact upload/download name matching
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - run: npm test

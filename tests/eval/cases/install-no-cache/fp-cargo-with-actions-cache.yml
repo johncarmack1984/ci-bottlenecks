@@ -1,0 +1,21 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: actions/cache targeting ~/.cargo paths provides Rust dependency caching — cargo build is covered
+# source: rule spec — actions/cache with Rust-matching paths counts as a cache provider
+name: cargo build with actions/cache for cargo
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: cargo-${{ hashFiles('Cargo.lock') }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          restore-keys: cargo-
+      - run: cargo build
+      - run: cargo test

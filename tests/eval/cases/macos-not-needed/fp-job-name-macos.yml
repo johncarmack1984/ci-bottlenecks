@@ -1,0 +1,18 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: job name "Build on macOS" signals intentional targeting
+# source: job id/name keyword allowlist
+name: Build
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build on macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release

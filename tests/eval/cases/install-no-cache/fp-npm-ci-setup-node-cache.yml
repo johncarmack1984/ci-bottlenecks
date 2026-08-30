@@ -1,0 +1,17 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: setup-node with cache: npm handles dependency caching — npm ci is covered
+# source: rule spec — setup-node with cache input is a recognized cache provider
+name: npm ci with setup-node cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test

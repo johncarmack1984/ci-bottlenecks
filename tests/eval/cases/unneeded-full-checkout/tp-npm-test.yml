@@ -1,0 +1,23 @@
+# eval: rule=unneeded-full-checkout expect=fire kind=tp
+# why: fetch-depth 0 with only npm test — tests do not need full history
+# source: common CI pattern that wastes checkout time
+name: NPM Test
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test

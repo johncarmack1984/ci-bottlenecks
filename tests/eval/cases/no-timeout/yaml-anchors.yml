@@ -1,0 +1,20 @@
+# eval: rule=no-timeout expect=fire kind=tp jobs=test
+# why: YAML anchors/aliases are valid YAML — the parser should handle them and still detect missing timeout
+# source: cross-cutting shape — YAML anchors are common in CI workflows
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps: &build-steps
+      - uses: actions/checkout@v4
+      - run: npm run build
+  test:
+    runs-on: ubuntu-latest
+    steps: *build-steps

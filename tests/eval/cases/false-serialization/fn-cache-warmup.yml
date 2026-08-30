@@ -1,0 +1,26 @@
+# eval: rule=false-serialization expect=silent kind=fn status=xfail
+# why: build warms the Rust cache so test benefits from it, but there is no artifact or output reference — rule fires incorrectly
+# source: cache warmup serialization pattern (implicit shared state via actions/cache or rust-cache)
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test

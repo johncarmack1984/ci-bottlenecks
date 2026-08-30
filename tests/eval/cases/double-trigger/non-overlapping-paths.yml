@@ -1,0 +1,19 @@
+# eval: rule=double-trigger expect=fire kind=miss
+# why: Push and PR with non-overlapping paths filters — in practice, a file change only matches one path set so no double trigger occurs, but the rule fires because it does not consider paths in its overlap analysis
+# source: Path-filtered workflows where src changes and docs changes are separated
+name: CI
+on:
+  push:
+    paths: ['src/**']
+  pull_request:
+    paths: ['docs/**']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

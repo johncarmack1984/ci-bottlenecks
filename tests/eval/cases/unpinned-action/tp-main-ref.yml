@@ -1,0 +1,13 @@
+# eval: rule=unpinned-action expect=fire kind=tp
+# why: action pinned to @main is a mutable ref — can change without notice
+# source: rule spec — @main is explicitly flagged
+name: Action at main
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-org/some-action@main
+      - run: echo done

@@ -1,0 +1,16 @@
+# eval: rule=no-timeout expect=silent kind=fp
+# why: inline suppression comment on the job line should prevent no-timeout from firing
+# source: suppression syntax documented in README
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build: # ci-bottlenecks: ignore[no-timeout]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

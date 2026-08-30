@@ -1,0 +1,17 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: pod trunk push publishes CocoaPods specs — macOS-only operation
+# source: run pattern allowlist
+name: CocoaPods Publish
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: pod trunk push MyLib.podspec

@@ -1,0 +1,19 @@
+# eval: rule=no-timeout expect=fire kind=tp
+# why: a job with runs-on as a ${{ }} expression is still a regular job that needs timeout
+# source: cross-cutting shape — dynamic runs-on via matrix or output expression
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

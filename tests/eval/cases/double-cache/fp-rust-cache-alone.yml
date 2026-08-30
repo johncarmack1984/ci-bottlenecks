@@ -1,0 +1,13 @@
+# eval: rule=double-cache expect=silent kind=fp
+# why: Using rust-cache without any manual cache step is the intended pattern — no redundancy
+# source: rule spec — single cache mechanism is fine
+name: Rust cache alone
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test

@@ -1,0 +1,16 @@
+# eval: rule=cache-key-no-hash expect=fire kind=miss
+# why: Cache key using $RUNNER_OS (shell var, not ${{ runner.os }}) — the rule fires high (correctly, the key IS static in GHA context) but misses the more specific diagnosis that the user likely intended a dynamic reference using shell syntax instead of GHA expression syntax
+# source: common real-world mistake where users confuse shell vars with GHA expressions
+name: Shell variable in cache key
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: $RUNNER_OS-deps-cache
+          path: node_modules
+      - run: npm ci

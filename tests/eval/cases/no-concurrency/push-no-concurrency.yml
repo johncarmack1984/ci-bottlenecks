@@ -1,0 +1,14 @@
+# eval: rule=no-concurrency expect=fire kind=tp
+# why: Push trigger with no concurrency block at workflow or job level
+# source: Basic push workflow missing concurrency configuration
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

@@ -1,0 +1,18 @@
+# eval: rule=matrix-max-parallel expect=silent kind=fp pedantic=true
+# why: max-parallel is set but job has a deploy step — rate limiting deploys is legitimate
+# source: rule spec — skips jobs with deploy/publish/release/push steps
+name: Max parallel with deploy
+on: workflow_dispatch
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      max-parallel: 1
+      matrix:
+        environment: [staging, production]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run build
+      - run: npm run deploy -- --env ${{ matrix.environment }}

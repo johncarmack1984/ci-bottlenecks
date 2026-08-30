@@ -1,0 +1,18 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Job-level concurrency with cancel-in-progress: true counts as configured
+# source: Per-job concurrency when different jobs need different concurrency groups
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: build-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

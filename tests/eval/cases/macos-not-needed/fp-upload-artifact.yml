@@ -1,0 +1,21 @@
+# eval: rule=macos-not-needed expect=silent kind=fp
+# why: upload-artifact on macOS implies the job produces platform-specific artifacts
+# source: action allowlist (actions/upload-artifact)
+name: macOS Artifact
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-binary
+          path: target/release/myapp

@@ -1,0 +1,13 @@
+# eval: rule=no-timeout expect=silent kind=fp
+# why: Reusable workflow call jobs (uses: at job level) do not accept timeout-minutes and should be skipped
+# source: GitHub docs — reusable workflow call syntax
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  call-build:
+    uses: org/repo/.github/workflows/build.yml@main

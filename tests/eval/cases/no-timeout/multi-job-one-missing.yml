@@ -1,0 +1,23 @@
+# eval: rule=no-timeout expect=fire kind=tp jobs=test
+# why: Multiple jobs where only one is missing timeout; rule fires on that job only
+# source: Common multi-job workflow where some jobs get timeout and others are forgotten
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

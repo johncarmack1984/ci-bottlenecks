@@ -1,0 +1,17 @@
+# eval: rule=double-trigger expect=silent kind=fp
+# why: push + pull_request_target is not the same as push + pull_request — different trigger semantics
+# source: Security-sensitive workflows using pull_request_target for fork PRs
+name: CI
+on:
+  push:
+  pull_request_target:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

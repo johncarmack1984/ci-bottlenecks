@@ -1,0 +1,18 @@
+# eval: rule=double-cache expect=silent kind=fp
+# why: ~/.cargo/bin is deliberately excluded from the RUST_CACHE_PATHS regex — caching installed binaries alongside rust-cache is a valid pattern
+# source: rule spec — cargo/bin exclusion
+name: Rust cache with separate cargo bin cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          key: tools-${{ hashFiles('Cargo.toml') }}
+          path: ~/.cargo/bin
+          restore-keys: tools-
+      - run: cargo build

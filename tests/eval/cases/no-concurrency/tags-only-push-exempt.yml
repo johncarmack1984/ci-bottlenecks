@@ -1,0 +1,14 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Tags-only push trigger is exempt — release workflows triggered by tags rarely benefit from cancel-in-progress
+# source: release-plz README pattern
+name: Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run release

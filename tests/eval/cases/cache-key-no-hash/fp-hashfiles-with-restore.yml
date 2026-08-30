@@ -1,0 +1,18 @@
+# eval: rule=cache-key-no-hash expect=silent kind=fp
+# why: actions/cache with hashFiles in key and restore-keys present should not fire
+# source: rule spec — well-configured cache is not a finding
+name: Proper cache with hashFiles and restore-keys
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          path: node_modules
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm ci

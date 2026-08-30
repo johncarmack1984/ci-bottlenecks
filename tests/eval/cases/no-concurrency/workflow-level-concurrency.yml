@@ -1,0 +1,18 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Workflow-level concurrency with cancel-in-progress: true is properly configured
+# source: GitHub docs standard concurrency pattern
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

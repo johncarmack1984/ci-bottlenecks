@@ -1,0 +1,13 @@
+# eval: rule=unpinned-action expect=silent kind=miss
+# why: non-v-prefixed tag like @release-1.0 is not flagged — currently correct (not matching main/master/empty), but could be a mutable branch name rather than a tag
+# source: rule spec — only main/master/empty are flagged as mutable
+name: Non-v-prefixed tag ref
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-org/some-action@release-1.0
+      - run: echo done

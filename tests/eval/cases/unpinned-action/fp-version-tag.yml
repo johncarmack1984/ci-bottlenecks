@@ -1,0 +1,13 @@
+# eval: rule=unpinned-action expect=silent kind=fp
+# why: action pinned to a version tag (@v4) is not mutable — VERSION_TAG_RE matches v-prefixed tags
+# source: rule spec — version tags are safe
+name: Action at version tag
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: echo done

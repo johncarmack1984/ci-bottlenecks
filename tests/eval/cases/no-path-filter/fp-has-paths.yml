@@ -1,0 +1,20 @@
+# eval: rule=no-path-filter expect=silent kind=fp pedantic=true
+# why: workflow already has paths filter on push trigger — rule short-circuits
+# source: rule spec — does not fire when workflow has path filters
+name: Has paths filter
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test

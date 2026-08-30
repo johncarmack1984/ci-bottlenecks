@@ -1,0 +1,19 @@
+# eval: rule=double-cache expect=silent kind=fp
+# why: Manual actions/cache for non-Rust paths (e.g. node_modules) alongside rust-cache is not redundant — they cache different ecosystems
+# source: rule spec — only Rust-related paths trigger double-cache
+name: Rust cache with unrelated node cache
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          key: node-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+          restore-keys: node-
+      - run: cargo build
+      - run: npm run wasm-bindgen

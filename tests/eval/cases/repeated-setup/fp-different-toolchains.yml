@@ -1,0 +1,38 @@
+# eval: rule=repeated-setup expect=silent kind=fp
+# why: 3 Rust jobs with different toolchain refs (stable/nightly/1.70.0) — different toolchain ref breaks the group
+# source: rule spec — groups by (toolchain, runs-on, toolchain ref, cargo flags)
+name: Different Rust toolchains
+on: workflow_dispatch
+jobs:
+  test-stable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: cargo build
+      - run: cargo test
+
+  test-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - run: cargo build
+      - run: cargo test
+
+  test-msrv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.70.0"
+      - run: cargo build
+      - run: cargo test

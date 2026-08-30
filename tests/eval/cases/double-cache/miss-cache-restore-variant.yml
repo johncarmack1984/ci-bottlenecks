@@ -1,0 +1,18 @@
+# eval: rule=double-cache expect=silent kind=miss
+# why: A third-party cache action like buildjet/cache targeting cargo paths alongside rust-cache is also redundant, but the rule only checks for actions/cache (parseActionRef key), not alternative cache actions
+# source: rule implementation gap — stepActionKey match is limited to actions/cache
+name: Rust cache with third-party cache for cargo paths
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: buildjet/cache@v4
+        with:
+          key: cargo-${{ hashFiles('Cargo.lock') }}
+          path: ~/.cargo/registry
+          restore-keys: cargo-
+      - run: cargo build

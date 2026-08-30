@@ -1,0 +1,27 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer reads needs.build.outputs — genuine data dependency
+# source: needs.X.outputs reference detection
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: echo "version=1.0.0" >> $GITHUB_OUTPUT
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Testing version ${{ needs.build.outputs.version }}"

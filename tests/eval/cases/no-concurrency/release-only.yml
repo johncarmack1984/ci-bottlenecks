@@ -1,0 +1,14 @@
+# eval: rule=no-concurrency expect=silent kind=fp
+# why: Release-only trigger does not benefit from cancel-in-progress
+# source: GitHub release event publish workflows
+name: Publish
+on:
+  release:
+    types: [published]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm publish

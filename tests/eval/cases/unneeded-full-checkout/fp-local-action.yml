@@ -1,0 +1,19 @@
+# eval: rule=unneeded-full-checkout expect=silent kind=fp
+# why: local composite actions are opaque and may need history internally
+# source: conservative allowlist for local actions
+name: Local Action
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/release

@@ -1,0 +1,15 @@
+# eval: rule=double-trigger expect=fire kind=tp
+# why: Shorthand array syntax with push + pull_request and no branch filters means all branches overlap
+# source: Most common misconfiguration pattern
+name: CI
+on: [push, pull_request]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

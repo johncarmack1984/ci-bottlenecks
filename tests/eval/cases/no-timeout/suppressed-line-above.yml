@@ -1,0 +1,17 @@
+# eval: rule=no-timeout expect=silent kind=fp
+# why: suppression comment on the line directly above the job key should prevent no-timeout from firing
+# source: suppression syntax documented in README
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  # ci-bottlenecks: ignore[no-timeout]
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

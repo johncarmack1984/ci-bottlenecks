@@ -1,0 +1,31 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: producer is a gate job using dorny/paths-filter — serialization filters work
+# source: gate job pattern (dorny/paths-filter) exemption
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [changes]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

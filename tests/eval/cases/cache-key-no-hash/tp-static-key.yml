@@ -1,0 +1,16 @@
+# eval: rule=cache-key-no-hash expect=fire kind=tp count=1
+# why: actions/cache with a plain string key (no hashFiles, no ${{ }}) should fire high
+# source: rule spec — static key detection
+name: Static cache key
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          key: my-cache
+          path: node_modules
+      - run: npm test

@@ -1,0 +1,19 @@
+# eval: rule=double-trigger expect=silent kind=fn
+# why: Push branches filter applies to head refs, PR branches filter applies to base refs — these are different namespaces. A push to develop with a PR targeting main still double-triggers, but the rule sees no literal branch overlap and stays silent.
+# source: Real-world pattern where push and PR branch filters refer to different ref types
+name: CI
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
