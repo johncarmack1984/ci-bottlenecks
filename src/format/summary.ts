@@ -41,9 +41,11 @@ export function formatSummary(findings: Finding[]): string {
     lines.push("");
   }
 
-  const withSavings = findings.filter((f) => f.estimatedSavings?.minutesPerRun);
-  if (withSavings.length > 0) {
-    const totalSavings = withSavings.reduce(
+  const exactSavings = findings.filter(
+    (f) => f.estimatedSavings?.minutesPerRun && f.estimatedSavings.confidence === "exact",
+  );
+  if (exactSavings.length > 0) {
+    const totalSavings = exactSavings.reduce(
       (sum, f) => sum + (f.estimatedSavings?.minutesPerRun ?? 0),
       0,
     );
