@@ -1,5 +1,5 @@
-# eval: rule=double-trigger expect=silent kind=fn
-# why: Push branches filter applies to head refs, PR branches filter applies to base refs — these are different namespaces. A push to develop with a PR targeting main still double-triggers, but the rule sees no literal branch overlap and stays silent.
+# eval: rule=double-trigger expect=silent kind=fp
+# why: push.branches filters HEAD refs, pull_request.branches filters BASE refs — push: [develop] only fires on direct pushes to develop, PR: [main] only fires on PRs targeting main. Cross-branch PRs (develop->main) are a rare long-lived-to-long-lived case, not a typical double trigger.
 # source: Real-world pattern where push and PR branch filters refer to different ref types
 name: CI
 on:

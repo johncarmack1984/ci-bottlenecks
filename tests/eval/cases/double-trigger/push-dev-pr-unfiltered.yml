@@ -1,0 +1,18 @@
+# eval: rule=double-trigger expect=silent kind=fp
+# why: push restricted to a single literal branch (dev) is a long-lived branch, not a PR head — no double trigger
+# source: tauri CI pattern — push: [dev] + pull_request unfiltered
+name: CI
+on:
+  push:
+    branches: [dev]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

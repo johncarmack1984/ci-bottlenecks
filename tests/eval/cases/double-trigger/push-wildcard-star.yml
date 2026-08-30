@@ -1,0 +1,18 @@
+# eval: rule=double-trigger expect=fire kind=tp
+# why: push.branches contains "**" wildcard matching all branches — equivalent to unfiltered push
+# source: Explicit wildcard that matches all refs
+name: CI
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

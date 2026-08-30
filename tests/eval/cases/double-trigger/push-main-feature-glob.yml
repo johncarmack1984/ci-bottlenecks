@@ -1,0 +1,19 @@
+# eval: rule=double-trigger expect=fire kind=tp
+# why: push.branches includes glob "feature-*" which matches PR head branches, causing duplicate runs alongside pull_request
+# source: Misconfigured workflow where push glob matches the same branches that open PRs
+name: CI
+on:
+  push:
+    branches: [main, "feature-*"]
+  pull_request:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

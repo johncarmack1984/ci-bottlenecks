@@ -79,14 +79,14 @@ jobs:
     expect(f.length).toBe(0);
   });
 
-  it("flags when push has non-default branches", () => {
+  it("flags when push has glob branches matching PR heads", () => {
     const f = findByRule(check(`
 name: T
 on:
   push:
-    branches: [main, develop]
+    branches: [main, "feature-*"]
   pull_request:
-    branches: [develop]
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest

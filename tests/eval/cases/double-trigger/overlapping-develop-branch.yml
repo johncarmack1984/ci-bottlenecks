@@ -1,6 +1,6 @@
-# eval: rule=double-trigger expect=fire kind=tp
-# why: Push includes non-default branch 'develop' which appears in both push and PR branch filters
-# source: Multi-branch workflow where develop is not exempted as a default branch
+# eval: rule=double-trigger expect=silent kind=fp
+# why: push.branches and pull_request.branches are different namespaces — push filters HEAD refs, PR filters BASE refs. All branches here are literal long-lived names, not PR head branches.
+# source: Multi-branch workflow where push and PR list overlapping literal branch names
 name: CI
 on:
   push:

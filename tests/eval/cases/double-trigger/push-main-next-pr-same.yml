@@ -1,0 +1,19 @@
+# eval: rule=double-trigger expect=silent kind=fp
+# why: push restricted to literal long-lived branches (main, next) — these are not PR head branches; cross-branch PRs (next->main) are rare and info-level at most
+# source: biome CI pattern — push: [main, next] + pull_request: [main, next]
+name: CI
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+    branches: [main, next]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

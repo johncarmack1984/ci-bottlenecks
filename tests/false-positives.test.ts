@@ -599,11 +599,11 @@ describe("double-trigger: patch preserves existing tags/paths", () => {
 name: CI
 on:
   push:
-    branches: [main, develop]
+    branches: [main, "feature-*"]
     tags: ['v*']
     paths: ['src/**']
   pull_request:
-    branches: [develop]
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest

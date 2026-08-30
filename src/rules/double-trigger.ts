@@ -1,32 +1,27 @@
 import type { Rule, Finding, PushTrigger, PullRequestTrigger } from "../types.ts";
 
-const DEFAULT_BRANCHES = new Set(["main", "master"]);
-
-function isDefaultBranchOnly(branches: string[] | undefined): boolean {
-  if (!Array.isArray(branches) || branches.length === 0) return false;
-  return branches.every((b) => DEFAULT_BRANCHES.has(b));
+function hasGlobChars(pattern: string): boolean {
+  return /[*?[\]]/.test(pattern);
 }
 
-function isSingleDefaultBranch(branches: string[] | undefined): boolean {
-  if (!Array.isArray(branches) || branches.length !== 1) return false;
-  return DEFAULT_BRANCHES.has(branches[0]!);
-}
-
-function branchesOverlap(
+function findOverlappingPatterns(
   push: PushTrigger,
-  pr: PullRequestTrigger,
-): boolean {
+): string[] | null {
   // Tags-only push (has tags/tags-ignore but no branches) never overlaps with PR
-  if ((push.tags || push["tags-ignore"]) && !push.branches) return false;
+  if ((push.tags || push["tags-ignore"]) && !push.branches) return null;
 
-  if (isDefaultBranchOnly(push.branches)) return false;
+  // No branch filter on push — fires on ALL branches including PR heads
+  if (!Array.isArray(push.branches) || push.branches.length === 0) return [];
 
-  // A single literal push.branches entry is effectively the default branch for that repo
-  if (isSingleDefaultBranch(push.branches)) return false;
+  // Glob patterns in push.branches can match PR head branches (feature-*, perf/**)
+  const globs = push.branches.filter(hasGlobChars);
+  if (globs.length > 0) return globs;
 
-  if (!Array.isArray(push.branches) || !Array.isArray(pr.branches)) return true;
-  const prSet = new Set(pr.branches);
-  return push.branches.some((b) => prSet.has(b));
+  // All branches are literal names — these are long-lived/protected branches
+  // (main, dev, next, v1, etc.) that are not PR head branches.
+  // push.branches filters HEAD refs, pull_request.branches filters BASE refs —
+  // they are different namespaces, so literal-only lists do not cause double runs.
+  return null;
 }
 
 function prTriggersOnPush(pr: PullRequestTrigger): boolean {
@@ -48,11 +43,17 @@ export const doubleTrigger: Rule = {
     const pr = triggers.pull_request;
 
     if (!prTriggersOnPush(pr)) return [];
-    if (!branchesOverlap(push, pr)) return [];
 
-    const fmtBranches = (b: unknown) => Array.isArray(b) ? `[${b.join(", ")}]` : "(all branches)";
-    const pushDesc = fmtBranches(push.branches);
-    const prDesc = fmtBranches(pr.branches);
+    const patterns = findOverlappingPatterns(push);
+    if (patterns === null) return [];
+
+    let evidence: string;
+    if (patterns.length > 0) {
+      const quoted = patterns.map((p) => `"${p}"`).join(", ");
+      evidence = `push.branches pattern ${quoted} matches PR head branches, causing runs on both push and pull_request events`;
+    } else {
+      evidence = `push has no branch filter, so every push (including to PR head branches) fires both triggers`;
+    }
 
     // Build patch that preserves existing tags/paths
     const fmtArr = (v: unknown) => Array.isArray(v) ? v.join(", ") : String(v);
@@ -70,7 +71,7 @@ export const doubleTrigger: Rule = {
         tier: "static",
         workflow: ctx.workflow.path,
         message: `Workflow has both push and pull_request triggers with overlapping branches, causing duplicate CI runs`,
-        evidence: `push.branches: ${pushDesc}, pull_request.branches: ${prDesc}`,
+        evidence,
         remediation:
           "Restrict push to the default branch and/or tags, or remove one trigger.",
         patch: patchParts.join("\n"),
