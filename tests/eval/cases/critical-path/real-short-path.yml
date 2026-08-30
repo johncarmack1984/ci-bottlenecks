@@ -1,0 +1,24 @@
+# eval: rule=critical-path expect=silent kind=fp
+# why: critical path < 60s — too short to be actionable
+name: Quick Checks
+on: push
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run lint
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run typecheck
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

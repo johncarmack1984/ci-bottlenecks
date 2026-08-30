@@ -22,16 +22,16 @@
     },
     {
       "rule": "critical-path",
-      "cases": 10,
-      "passed": 9,
+      "cases": 12,
+      "passed": 11,
       "failed": 0,
       "tp": {
         "total": 5,
         "hit": 5
       },
       "fp": {
-        "total": 4,
-        "guarded": 4
+        "total": 6,
+        "guarded": 6
       },
       "fn": 1,
       "miss": 0,
@@ -122,16 +122,16 @@
     },
     {
       "rule": "flaky-or-hanging",
-      "cases": 9,
-      "passed": 9,
+      "cases": 10,
+      "passed": 10,
       "failed": 0,
       "tp": {
         "total": 4,
         "hit": 4
       },
       "fp": {
-        "total": 3,
-        "guarded": 3
+        "total": 4,
+        "guarded": 4
       },
       "fn": 0,
       "miss": 2,
@@ -262,12 +262,12 @@
     },
     {
       "rule": "queue-dominated",
-      "cases": 6,
-      "passed": 6,
+      "cases": 7,
+      "passed": 7,
       "failed": 0,
       "tp": {
-        "total": 2,
-        "hit": 2
+        "total": 3,
+        "hit": 3
       },
       "fp": {
         "total": 3,
@@ -302,16 +302,16 @@
     },
     {
       "rule": "setup-dominated",
-      "cases": 6,
-      "passed": 6,
+      "cases": 7,
+      "passed": 7,
       "failed": 0,
       "tp": {
         "total": 2,
         "hit": 2
       },
       "fp": {
-        "total": 3,
-        "guarded": 3
+        "total": 4,
+        "guarded": 4
       },
       "fn": 0,
       "miss": 1,

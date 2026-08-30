@@ -1,0 +1,11 @@
+# eval: rule=critical-path expect=silent kind=fp
+# why: single-job workflow — critical path analysis is meaningless with one job
+name: Lint
+on: push
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run lint

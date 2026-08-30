@@ -1,0 +1,44 @@
+{
+  "runs": [
+    {
+      "id": 1, "name": "Build", "workflowId": 1, "headSha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:05:00Z",
+      "jobs": [
+        { "id": 1, "name": "build-macos", "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z", "startedAt": "2024-01-01T00:03:00Z", "completedAt": "2024-01-01T00:05:00Z", "runnerLabel": "macos-latest", "steps": [] }
+      ]
+    },
+    {
+      "id": 2, "name": "Build", "workflowId": 1, "headSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:05:00Z",
+      "jobs": [
+        { "id": 2, "name": "build-macos", "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z", "startedAt": "2024-01-02T00:03:00Z", "completedAt": "2024-01-02T00:05:00Z", "runnerLabel": "macos-latest", "steps": [] }
+      ]
+    },
+    {
+      "id": 3, "name": "Build", "workflowId": 1, "headSha": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:05:00Z",
+      "jobs": [
+        { "id": 3, "name": "build-macos", "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z", "startedAt": "2024-01-03T00:03:00Z", "completedAt": "2024-01-03T00:05:00Z", "runnerLabel": "macos-latest", "steps": [] }
+      ]
+    },
+    {
+      "id": 4, "name": "Build", "workflowId": 1, "headSha": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z",
+      "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:05:00Z",
+      "jobs": [
+        { "id": 4, "name": "build-macos", "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z", "startedAt": "2024-01-04T00:03:00Z", "completedAt": "2024-01-04T00:05:00Z", "runnerLabel": "macos-latest", "steps": [] }
+      ]
+    },
+    {
+      "id": 5, "name": "Build", "workflowId": 1, "headSha": "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+      "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z",
+      "runStartedAt": "2024-01-05T00:00:00Z", "updatedAt": "2024-01-05T00:05:00Z",
+      "jobs": [
+        { "id": 5, "name": "build-macos", "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z", "startedAt": "2024-01-05T00:03:00Z", "completedAt": "2024-01-05T00:05:00Z", "runnerLabel": "macos-latest", "steps": [] }
+      ]
+    }
+  ]
+}

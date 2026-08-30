@@ -1,0 +1,79 @@
+{
+  "runs": [
+    {
+      "id": 1, "name": "Monitor", "workflowId": 1, "headSha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:00:11Z",
+      "jobs": [{
+        "id": 1, "name": "probe", "conclusion": "success",
+        "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:00:11Z",
+        "steps": [
+          { "name": "Set up job", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:00:02Z" },
+          { "name": "Run curl -f https://example.com/health", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:00:02Z", "completedAt": "2024-01-01T00:00:09Z" },
+          { "name": "Run echo \"OK\"", "number": 3, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:00:09Z", "completedAt": "2024-01-01T00:00:10Z" },
+          { "name": "Complete job", "number": 4, "status": "completed", "conclusion": "success", "startedAt": "2024-01-01T00:00:10Z", "completedAt": "2024-01-01T00:00:11Z" }
+        ]
+      }]
+    },
+    {
+      "id": 2, "name": "Monitor", "workflowId": 1, "headSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:00:11Z",
+      "jobs": [{
+        "id": 2, "name": "probe", "conclusion": "success",
+        "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:00:11Z",
+        "steps": [
+          { "name": "Set up job", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:00:02Z" },
+          { "name": "Run curl -f https://example.com/health", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:00:02Z", "completedAt": "2024-01-02T00:00:09Z" },
+          { "name": "Run echo \"OK\"", "number": 3, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:00:09Z", "completedAt": "2024-01-02T00:00:10Z" },
+          { "name": "Complete job", "number": 4, "status": "completed", "conclusion": "success", "startedAt": "2024-01-02T00:00:10Z", "completedAt": "2024-01-02T00:00:11Z" }
+        ]
+      }]
+    },
+    {
+      "id": 3, "name": "Monitor", "workflowId": 1, "headSha": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:00:11Z",
+      "jobs": [{
+        "id": 3, "name": "probe", "conclusion": "success",
+        "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:00:11Z",
+        "steps": [
+          { "name": "Set up job", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:00:02Z" },
+          { "name": "Run curl -f https://example.com/health", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:00:02Z", "completedAt": "2024-01-03T00:00:09Z" },
+          { "name": "Run echo \"OK\"", "number": 3, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:00:09Z", "completedAt": "2024-01-03T00:00:10Z" },
+          { "name": "Complete job", "number": 4, "status": "completed", "conclusion": "success", "startedAt": "2024-01-03T00:00:10Z", "completedAt": "2024-01-03T00:00:11Z" }
+        ]
+      }]
+    },
+    {
+      "id": 4, "name": "Monitor", "workflowId": 1, "headSha": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z",
+      "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:00:11Z",
+      "jobs": [{
+        "id": 4, "name": "probe", "conclusion": "success",
+        "startedAt": "2024-01-04T00:00:00Z", "completedAt": "2024-01-04T00:00:11Z",
+        "steps": [
+          { "name": "Set up job", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-04T00:00:00Z", "completedAt": "2024-01-04T00:00:02Z" },
+          { "name": "Run curl -f https://example.com/health", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-04T00:00:02Z", "completedAt": "2024-01-04T00:00:09Z" },
+          { "name": "Run echo \"OK\"", "number": 3, "status": "completed", "conclusion": "success", "startedAt": "2024-01-04T00:00:09Z", "completedAt": "2024-01-04T00:00:10Z" },
+          { "name": "Complete job", "number": 4, "status": "completed", "conclusion": "success", "startedAt": "2024-01-04T00:00:10Z", "completedAt": "2024-01-04T00:00:11Z" }
+        ]
+      }]
+    },
+    {
+      "id": 5, "name": "Monitor", "workflowId": 1, "headSha": "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+      "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z",
+      "runStartedAt": "2024-01-05T00:00:00Z", "updatedAt": "2024-01-05T00:00:11Z",
+      "jobs": [{
+        "id": 5, "name": "probe", "conclusion": "success",
+        "startedAt": "2024-01-05T00:00:00Z", "completedAt": "2024-01-05T00:00:11Z",
+        "steps": [
+          { "name": "Set up job", "number": 1, "status": "completed", "conclusion": "success", "startedAt": "2024-01-05T00:00:00Z", "completedAt": "2024-01-05T00:00:02Z" },
+          { "name": "Run curl -f https://example.com/health", "number": 2, "status": "completed", "conclusion": "success", "startedAt": "2024-01-05T00:00:02Z", "completedAt": "2024-01-05T00:00:09Z" },
+          { "name": "Run echo \"OK\"", "number": 3, "status": "completed", "conclusion": "success", "startedAt": "2024-01-05T00:00:09Z", "completedAt": "2024-01-05T00:00:10Z" },
+          { "name": "Complete job", "number": 4, "status": "completed", "conclusion": "success", "startedAt": "2024-01-05T00:00:10Z", "completedAt": "2024-01-05T00:00:11Z" }
+        ]
+      }]
+    }
+  ]
+}

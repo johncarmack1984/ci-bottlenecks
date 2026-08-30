@@ -1,0 +1,54 @@
+{
+  "runs": [
+    {
+      "id": 1, "name": "Quick Checks", "workflowId": 1, "headSha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z",
+      "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:00:45Z",
+      "jobs": [
+        { "id": 1, "name": "lint", "conclusion": "success", "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:00:15Z", "steps": [] },
+        { "id": 2, "name": "typecheck", "conclusion": "success", "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:00:20Z", "steps": [] },
+        { "id": 3, "name": "test", "conclusion": "success", "startedAt": "2024-01-01T00:00:20Z", "completedAt": "2024-01-01T00:00:45Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 2, "name": "Quick Checks", "workflowId": 1, "headSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z",
+      "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:00:45Z",
+      "jobs": [
+        { "id": 4, "name": "lint", "conclusion": "success", "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:00:15Z", "steps": [] },
+        { "id": 5, "name": "typecheck", "conclusion": "success", "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:00:20Z", "steps": [] },
+        { "id": 6, "name": "test", "conclusion": "success", "startedAt": "2024-01-02T00:00:20Z", "completedAt": "2024-01-02T00:00:45Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 3, "name": "Quick Checks", "workflowId": 1, "headSha": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z",
+      "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:00:45Z",
+      "jobs": [
+        { "id": 7, "name": "lint", "conclusion": "success", "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:00:15Z", "steps": [] },
+        { "id": 8, "name": "typecheck", "conclusion": "success", "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:00:20Z", "steps": [] },
+        { "id": 9, "name": "test", "conclusion": "success", "startedAt": "2024-01-03T00:00:20Z", "completedAt": "2024-01-03T00:00:45Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 4, "name": "Quick Checks", "workflowId": 1, "headSha": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z",
+      "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:00:45Z",
+      "jobs": [
+        { "id": 10, "name": "lint", "conclusion": "success", "startedAt": "2024-01-04T00:00:00Z", "completedAt": "2024-01-04T00:00:15Z", "steps": [] },
+        { "id": 11, "name": "typecheck", "conclusion": "success", "startedAt": "2024-01-04T00:00:00Z", "completedAt": "2024-01-04T00:00:20Z", "steps": [] },
+        { "id": 12, "name": "test", "conclusion": "success", "startedAt": "2024-01-04T00:00:20Z", "completedAt": "2024-01-04T00:00:45Z", "steps": [] }
+      ]
+    },
+    {
+      "id": 5, "name": "Quick Checks", "workflowId": 1, "headSha": "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+      "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z",
+      "runStartedAt": "2024-01-05T00:00:00Z", "updatedAt": "2024-01-05T00:00:45Z",
+      "jobs": [
+        { "id": 13, "name": "lint", "conclusion": "success", "startedAt": "2024-01-05T00:00:00Z", "completedAt": "2024-01-05T00:00:15Z", "steps": [] },
+        { "id": 14, "name": "typecheck", "conclusion": "success", "startedAt": "2024-01-05T00:00:00Z", "completedAt": "2024-01-05T00:00:20Z", "steps": [] },
+        { "id": 15, "name": "test", "conclusion": "success", "startedAt": "2024-01-05T00:00:20Z", "completedAt": "2024-01-05T00:00:45Z", "steps": [] }
+      ]
+    }
+  ]
+}

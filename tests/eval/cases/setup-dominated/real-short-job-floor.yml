@@ -1,0 +1,13 @@
+# eval: rule=setup-dominated expect=silent kind=fp
+# why: job is too short (11s total, 2s setup) for the floor — absolute setup < 60s
+name: Monitor
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: curl -f https://example.com/health
+      - run: echo "OK"
