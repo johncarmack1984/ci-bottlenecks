@@ -1,0 +1,145 @@
+# ci-bottlenecks
+
+Find performance problems in GitHub Actions pipelines.
+
+**actionlint** checks correctness, **zizmor** checks security, **ci-bottlenecks** checks performance.
+
+ci-bottlenecks is a linter for GitHub Actions workflows that catches common CI performance anti-patterns: missing timeouts, redundant triggers, uncached installs, unnecessary macOS runners, serialized jobs that could run in parallel, and more. It runs statically on your workflow YAML files, and optionally in audit mode against real run data from the GitHub API.
+
+## Install
+
+### CLI
+
+```sh
+# With bun
+bunx ci-bottlenecks
+
+# With npx
+npx ci-bottlenecks
+```
+
+### GitHub Action
+
+```yaml
+- name: Run ci-bottlenecks
+  uses: johncarmack1984/ci-bottlenecks@v0
+  with:
+    format: text,summary,sarif
+
+- name: Upload SARIF
+  if: always()
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: results.sarif
+```
+
+## Usage
+
+```
+ci-bottlenecks [path] [options]
+```
+
+### Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--audit` | Enable audit tier (pulls measured data from GitHub API) | off |
+| `--pedantic` | Enable pedantic rules | off |
+| `--runs N` | Maximum number of completed runs to sample for audit | 50 |
+| `--format text\|json\|sarif\|summary` | Output format (repeatable) | text |
+| `--fail-on high\|medium\|low\|info` | Minimum severity to fail the check | high |
+| `--sarif-output path` | Write SARIF to a file instead of stdout | - |
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | No findings at or above the `--fail-on` threshold |
+| 1 | Findings found at or above the threshold |
+| 2 | Error (no workflows found, parse failure, etc.) |
+
+## Rules
+
+### Static rules
+
+These run against your workflow YAML files with no API access required.
+
+| ID | Severity | Description |
+|----|----------|-------------|
+| `no-timeout` | medium | Job without `timeout-minutes` (default is 6 hours) |
+| `double-trigger` | high | Push and pull_request triggers overlap, causing duplicate runs |
+| `no-concurrency` | medium | Workflow triggered on push/PR with no concurrency + cancel-in-progress |
+| `cache-key-no-hash` | high | Cache key without `hashFiles` or dynamic component |
+| `double-cache` | medium | Redundant cache mechanisms in the same job |
+| `install-no-cache` | medium | Package install without a cache mechanism |
+| `unneeded-full-checkout` | low | Full git history checkout without steps needing it |
+| `macos-not-needed` | high | macOS runner used without macOS-specific work |
+| `false-serialization` | medium | Job depends on another but consumes nothing from it |
+| `repeated-setup` | medium | Multiple jobs repeat checkout + toolchain + build with no artifact hand-off |
+| `no-path-filter` | low (pedantic) | Push/PR workflow without path filters |
+| `matrix-max-parallel` | low (pedantic) | `max-parallel` limits matrix concurrency without obvious reason |
+| `unpinned-action` | info | Action uses mutable ref (`@main`, `@master`, or no ref) |
+
+### Audit rules
+
+These require `--audit` and pull measured run data from the GitHub API.
+
+| ID | Severity | Description |
+|----|----------|-------------|
+| `critical-path` | info | Critical path through the job dependency graph |
+| `flaky-or-hanging` | high | Job with high duration variance or frequent cancellations |
+| `queue-dominated` | medium | Jobs spend more time queued than running |
+| `setup-dominated` | medium | Setup steps consume most of job time |
+| `double-run-measured` | high | Two runs of the same workflow on the same SHA within 5 minutes |
+
+## Suppression
+
+Suppress a specific rule on a job or step by adding a comment on the same line or the line above:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4 # ci-bottlenecks: ignore[unneeded-full-checkout]
+```
+
+Suppress all rules on a line:
+
+```yaml
+  build: # ci-bottlenecks: ignore
+```
+
+Suppress a rule for the entire workflow by placing the comment at the top of the file:
+
+```yaml
+# ci-bottlenecks: ignore[no-path-filter]
+name: Release
+```
+
+## GitHub Action
+
+### Inputs
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `path` | Path to the repository root | `.` |
+| `audit` | Enable audit tier (pulls measured data from GitHub API) | `false` |
+| `runs` | Maximum number of completed runs to sample for audit | `50` |
+| `pedantic` | Enable pedantic rules | `false` |
+| `fail-on` | Minimum severity to fail the check (`high`, `medium`, `low`, `info`) | `high` |
+| `format` | Output formats (comma-separated: `text`, `json`, `sarif`, `summary`) | `text,summary,sarif` |
+| `token` | GitHub token for API access (audit mode) | `${{ github.token }}` |
+
+### Outputs
+
+| Output | Description |
+|--------|-------------|
+| `findings` | Number of findings |
+| `sarif-path` | Path to the generated SARIF file |
+
+## Roadmap
+
+- **Log-derived cache hit rates** -- extension point for analyzing real cache statistics from job logs, enabling rules that detect caches that never hit or always miss.
+- **SARIF upload** -- already supported (shown above); future work includes richer region and fix metadata in SARIF output.
+
+## License
+
+MIT
