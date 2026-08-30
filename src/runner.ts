@@ -67,7 +67,8 @@ export function runRules(
       let ruleFindings: Finding[];
       try {
         ruleFindings = rule.check(ctx);
-      } catch {
+      } catch (e) {
+        process.stderr.write(`Rule "${rule.id}" threw on ${workflow.path}: ${e instanceof Error ? e.message : e}\n`);
         continue;
       }
 

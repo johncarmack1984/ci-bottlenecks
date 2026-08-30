@@ -7,12 +7,26 @@ const SEVERITY_ORDER: Record<Severity, number> = {
   info: 3,
 };
 
-const SEVERITY_LABEL: Record<Severity, string> = {
-  high: "\x1b[31mHIGH\x1b[0m",
-  medium: "\x1b[33mMEDIUM\x1b[0m",
-  low: "\x1b[36mLOW\x1b[0m",
-  info: "\x1b[2mINFO\x1b[0m",
-};
+function useColor(): boolean {
+  if (process.env.NO_COLOR !== undefined) return false;
+  if (!process.stdout.isTTY) return false;
+  return true;
+}
+
+function severityLabel(severity: Severity): string {
+  if (!useColor()) return severity.toUpperCase();
+  const labels: Record<Severity, string> = {
+    high: "\x1b[31mHIGH\x1b[0m",
+    medium: "\x1b[33mMEDIUM\x1b[0m",
+    low: "\x1b[36mLOW\x1b[0m",
+    info: "\x1b[2mINFO\x1b[0m",
+  };
+  return labels[severity];
+}
+
+function c(code: string, text: string): string {
+  return useColor() ? `${code}${text}\x1b[0m` : text;
+}
 
 function fmtLocation(f: Finding): string {
   const parts = [f.workflow];
@@ -39,23 +53,23 @@ export function formatText(findings: Finding[]): string {
 
   const lines: string[] = [];
   for (const [workflow, group] of byWorkflow) {
-    lines.push(`\n\x1b[1m${workflow}\x1b[0m`);
+    lines.push(`\n${c("\x1b[1m", workflow)}`);
     for (const f of group) {
       lines.push(
-        `  ${SEVERITY_LABEL[f.severity]}  ${f.rule}  ${fmtLocation(f)}`,
+        `  ${severityLabel(f.severity)}  ${f.rule}  ${fmtLocation(f)}`,
       );
       lines.push(`    ${f.message}`);
-      lines.push(`    \x1b[2mevidence:\x1b[0m ${f.evidence}`);
-      lines.push(`    \x1b[2mfix:\x1b[0m ${f.remediation}`);
+      lines.push(`    ${c("\x1b[2m", "evidence:")} ${f.evidence}`);
+      lines.push(`    ${c("\x1b[2m", "fix:")} ${f.remediation}`);
       if (f.patch) {
-        lines.push(`    \x1b[2mpatch:\x1b[0m`);
+        lines.push(`    ${c("\x1b[2m", "patch:")}`);
         for (const patchLine of f.patch.split("\n")) {
           lines.push(`      ${patchLine}`);
         }
       }
       if (f.estimatedSavings?.minutesPerRun) {
         lines.push(
-          `    \x1b[32m~${f.estimatedSavings.minutesPerRun}min/run saved (${f.estimatedSavings.confidence})\x1b[0m`,
+          `    ${c("\x1b[32m", `~${f.estimatedSavings.minutesPerRun}min/run saved (${f.estimatedSavings.confidence})`)}`,
         );
       }
     }
