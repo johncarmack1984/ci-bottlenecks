@@ -31,9 +31,12 @@ export const queueDominated: Rule = {
 
       const earliestStart = Math.min(...jobStarts);
       const latestEnd = Math.max(...jobEnds);
+      // Use max(createdAt, runStartedAt) to handle re-run attempts correctly
       const createdAt = new Date(run.createdAt).getTime();
+      const runStarted = run.runStartedAt ? new Date(run.runStartedAt).getTime() : createdAt;
+      const effectiveStart = Math.max(createdAt, runStarted);
 
-      const qt = earliestStart - createdAt;
+      const qt = earliestStart - effectiveStart;
       const rt = latestEnd - earliestStart;
 
       if (qt > 0) queueTimes.push(qt);
@@ -45,6 +48,7 @@ export const queueDominated: Rule = {
     const medQueue = median(queueTimes);
     const medRun = median(runTimes);
 
+    // 50%: queue time exceeding half of run time is a strong signal of runner scarcity
     if (medRun <= 0 || medQueue < medRun * 0.5) return [];
 
     const pct = ((medQueue / medRun) * 100).toFixed(0);

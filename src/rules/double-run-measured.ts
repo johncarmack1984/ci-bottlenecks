@@ -1,5 +1,19 @@
-import type { Rule, Finding } from "../types.ts";
+import type { Rule, Finding, RunData } from "../types.ts";
 import { durationMs, fmtMinutes } from "../utils.ts";
+
+function runDurationFromJobs(run: RunData): number {
+  let total = 0;
+  for (const job of run.jobs) {
+    const d = durationMs(job.startedAt, job.completedAt);
+    if (d != null) total += d;
+  }
+  // Fall back to run-level times if no job data
+  if (total === 0) {
+    const d = durationMs(run.createdAt, run.updatedAt);
+    if (d != null) total = d;
+  }
+  return total;
+}
 
 export const doubleRunMeasured: Rule = {
   id: "double-run-measured",
@@ -32,13 +46,10 @@ export const doubleRunMeasured: Rule = {
       const second = sorted[1]!;
       const gapMs = new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
 
+      // 5-minute window: double-trigger runs land within seconds; 5 min catches CI queuing delays
       if (gapMs > 5 * 60_000) continue;
 
-      const durations = sorted.map((r) => {
-        const d = durationMs(r.createdAt, r.updatedAt);
-        return d ?? 0;
-      });
-
+      const durations = sorted.map(runDurationFromJobs);
       const totalMinutes = durations.reduce((s, d) => s + d, 0);
       const shorterDuration = Math.min(...durations.filter((d) => d > 0));
       const sha = first.headSha.slice(0, 7);

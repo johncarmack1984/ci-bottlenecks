@@ -3,6 +3,35 @@ import { computeCriticalPath } from "../dag.ts";
 import type { DagNode } from "../dag.ts";
 import { durationMs, median, fmtMinutes } from "../utils.ts";
 
+function matchJobDurations(
+  jobName: string,
+  jobDurations: Map<string, number[]>,
+): number[] {
+  // Exact match first
+  if (jobDurations.has(jobName)) return jobDurations.get(jobName)!;
+  // Matrix legs: "test (ubuntu-latest)" matches job name "test"
+  // Templated names: "Lint ${{ matrix.os }}" won't match exactly
+  // Collect all entries that start with "jobName (" and take the max over legs
+  const prefix = `${jobName} (`;
+  const legDurations: number[][] = [];
+  for (const [name, durations] of jobDurations) {
+    if (name.startsWith(prefix)) legDurations.push(durations);
+  }
+  if (legDurations.length > 0) {
+    // For DAG purposes, use the max median across legs
+    return legDurations.flat();
+  }
+  // Try regex matching for templated names with ${{ }}
+  const escapedName = jobName.replace(/\$\{\{[^}]*\}\}/g, ".*").replace(/[.*+?^${}()|[\]\\]/g, (m) => m === ".*" ? ".*" : `\\${m}`);
+  if (escapedName !== jobName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) {
+    const pattern = new RegExp(`^${escapedName}$`);
+    for (const [name, durations] of jobDurations) {
+      if (pattern.test(name)) return durations;
+    }
+  }
+  return [];
+}
+
 export const criticalPath: Rule = {
   id: "critical-path",
   tier: "audit",
@@ -24,15 +53,10 @@ export const criticalPath: Rule = {
       }
     }
 
-    const jobIdByName = new Map<string, string>();
-    for (const [jobId, job] of workflow.jobs) {
-      jobIdByName.set(job.name ?? jobId, jobId);
-    }
-
     const nodes: DagNode[] = [];
     for (const [jobId, job] of workflow.jobs) {
       const label = job.name ?? jobId;
-      const durations = jobDurations.get(label) ?? [];
+      const durations = matchJobDurations(label, jobDurations);
       nodes.push({
         jobId,
         duration: median(durations),
@@ -45,6 +69,9 @@ export const criticalPath: Rule = {
     const result = computeCriticalPath(nodes);
     if (result.path.length === 0) return [];
 
+    // Suppress when nothing matched (all durations are 0)
+    if (result.totalDuration <= 0) return [];
+
     const longestJob = result.path.reduce((best, id) => {
       const node = nodes.find((n) => n.jobId === id);
       const bestNode = nodes.find((n) => n.jobId === best);
@@ -53,6 +80,7 @@ export const criticalPath: Rule = {
 
     const longestDuration = nodes.find((n) => n.jobId === longestJob)?.duration ?? 0;
 
+    // Severity medium if serialization dominates (>2x single longest job)
     const severity = result.totalDuration > longestDuration * 2 ? "medium" as const : "info" as const;
 
     const pathStr = result.path

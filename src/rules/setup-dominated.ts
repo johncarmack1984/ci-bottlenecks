@@ -1,10 +1,10 @@
 import type { Rule, Finding } from "../types.ts";
 import { durationMs, median, fmtMinutes } from "../utils.ts";
 
-const SETUP_PATTERN = /checkout|setup|install|cache|restore|toolchain|bootstrap/i;
+const SETUP_PATTERN = /^(Set up job|Run actions\/checkout|Post )|checkout|setup|install|cache|restore|toolchain|bootstrap/i;
 
-function isSetupStep(step: { name: string; number: number }): boolean {
-  return step.number <= 3 || SETUP_PATTERN.test(step.name);
+function isSetupStep(step: { name: string }): boolean {
+  return SETUP_PATTERN.test(step.name);
 }
 
 export const setupDominated: Rule = {
@@ -64,17 +64,17 @@ export const setupDominated: Rule = {
       const breakdown: string[] = [];
 
       for (const [key, durations] of stepMap) {
-        const parts = key.split(":");
-        const stepNum = parseInt(parts[0]!, 10);
-        const stepName = parts.slice(1).join(":");
+        const colonIdx = key.indexOf(":");
+        const stepName = key.slice(colonIdx + 1);
         const med = median(durations);
 
-        if (isSetupStep({ name: stepName, number: stepNum })) {
+        if (isSetupStep({ name: stepName })) {
           setupTotal += med;
           breakdown.push(`${stepName}: ${fmtMinutes(med)}`);
         }
       }
 
+      // 50%: below this, setup is proportional to work; above it, setup dominates the job
       if (setupTotal < medTotal * 0.5) continue;
 
       const pct = ((setupTotal / medTotal) * 100).toFixed(0);
