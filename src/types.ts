@@ -67,21 +67,24 @@ export interface PullRequestTrigger {
   "branches-ignore"?: string[];
   paths?: string[];
   "paths-ignore"?: string[];
+  types?: string[];
 }
 
 export interface ConcurrencyConfig {
   group?: string;
-  "cancel-in-progress"?: boolean;
+  "cancel-in-progress"?: boolean | string;
 }
 
 export interface ParsedJob {
   id: string;
   name?: string;
+  uses?: string;
   "runs-on": string | string[];
   needs: string[];
   "timeout-minutes"?: number;
   concurrency?: ConcurrencyConfig;
   if?: string;
+  environment?: unknown;
   strategy?: {
     matrix?: Record<string, unknown>;
     "max-parallel"?: number;
@@ -91,6 +94,7 @@ export interface ParsedJob {
   steps: ParsedStep[];
   line?: number;
   env?: Record<string, string>;
+  raw?: Record<string, unknown>;
 }
 
 export interface ParsedStep {

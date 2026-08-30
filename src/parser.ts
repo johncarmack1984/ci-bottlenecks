@@ -86,6 +86,38 @@ function parseSuppressionComment(text: string): string[] | "all" | null {
   return "all";
 }
 
+function findSuppressionAbove(sourceLines: string[], lineNum: number): string[] | "all" | null {
+  for (let i = lineNum - 2; i >= 0; i--) {
+    const prev = sourceLines[i]!;
+    if (prev.trim() === "") continue;
+    // Only match pure comment lines for "line above" suppression
+    if (prev.trim().startsWith("#")) return parseSuppressionComment(prev);
+    break;
+  }
+  return null;
+}
+
+function findSuppressionAt(sourceLines: string[], lineNum: number): string[] | "all" | null {
+  const line = sourceLines[lineNum - 1];
+  if (line) {
+    const sup = parseSuppressionComment(line);
+    if (sup) return sup;
+  }
+  return findSuppressionAbove(sourceLines, lineNum);
+}
+
+function findSuppressionInRange(sourceLines: string[], startLine: number, endLine: number): string[] | "all" | null {
+  const above = findSuppressionAbove(sourceLines, startLine);
+  if (above) return above;
+  for (let i = startLine - 1; i < Math.min(endLine, sourceLines.length); i++) {
+    const line = sourceLines[i];
+    if (!line) continue;
+    const sup = parseSuppressionComment(line);
+    if (sup) return sup;
+  }
+  return null;
+}
+
 function parseSuppressions(
   sourceLines: string[],
   positions: Map<string, number>,
@@ -113,19 +145,18 @@ function parseSuppressions(
   }
 
   for (const [key, lineNum] of positions) {
-    const sourceLine = sourceLines[lineNum - 1];
-    if (!sourceLine) continue;
-    const sup = parseSuppressionComment(sourceLine);
-    if (!sup) continue;
-
     if (key.startsWith("jobs.") && !key.includes(".steps[")) {
-      const jobId = key.slice(5);
-      result.jobs.set(jobId, sup);
+      const sup = findSuppressionAt(sourceLines, lineNum);
+      if (sup) result.jobs.set(key.slice(5), sup);
     } else if (key.includes(".steps[")) {
       const match = key.match(/^jobs\.(.+)\.steps\[(\d+)\]$/);
-      if (match) {
-        result.steps.set(`${match[1]}:${match[2]}`, sup);
-      }
+      if (!match) continue;
+      const jobId = match[1]!;
+      const stepIdx = parseInt(match[2]!, 10);
+      const nextStepLine = positions.get(`jobs.${jobId}.steps[${stepIdx + 1}]`);
+      const endLine = nextStepLine ?? lineNum + 20;
+      const sup = findSuppressionInRange(sourceLines, lineNum, endLine);
+      if (sup) result.steps.set(`${jobId}:${stepIdx}`, sup);
     }
   }
 
@@ -161,9 +192,10 @@ function parseConcurrency(raw: unknown): ConcurrencyConfig | undefined {
   if (typeof raw === "string") return { group: raw };
   if (typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
+    const cip = obj["cancel-in-progress"];
     return {
       group: obj.group as string | undefined,
-      "cancel-in-progress": obj["cancel-in-progress"] as boolean | undefined,
+      "cancel-in-progress": (typeof cip === "boolean" || typeof cip === "string") ? cip : undefined,
     };
   }
   return undefined;
@@ -209,11 +241,13 @@ function parseJob(
   return {
     id,
     name: raw.name as string | undefined,
+    uses: typeof raw.uses === "string" ? raw.uses : undefined,
     "runs-on": runsOnValue,
     needs,
     "timeout-minutes": raw["timeout-minutes"] as number | undefined,
     concurrency: parseConcurrency(raw.concurrency),
     if: raw.if as string | undefined,
+    environment: raw.environment,
     strategy: strategy
       ? {
           matrix: strategy.matrix as Record<string, unknown> | undefined,
@@ -225,6 +259,7 @@ function parseJob(
     steps,
     line: positions.get(`jobs.${id}`),
     env: raw.env as Record<string, string> | undefined,
+    raw,
   };
 }
 
