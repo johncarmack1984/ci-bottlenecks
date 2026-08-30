@@ -144,7 +144,7 @@ function runCase(evalCase: EvalCase): Finding[] {
     pedantic: hasPedantic,
   };
 
-  if (isAudit && evalCase.timingData) {
+  if (evalCase.timingData) {
     opts.auditDataByWorkflow = new Map([[evalCase.path, evalCase.timingData]]);
   }
 

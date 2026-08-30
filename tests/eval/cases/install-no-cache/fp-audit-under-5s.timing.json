@@ -1,0 +1,97 @@
+{
+  "runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "aaaa",
+      "conclusion": "success",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "runStartedAt": "2026-01-01T00:00:05Z",
+      "updatedAt": "2026-01-01T00:02:00Z",
+      "jobs": [
+        {
+          "id": 2001,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-01-01T00:00:05Z",
+          "startedAt": "2026-01-01T00:00:10Z",
+          "completedAt": "2026-01-01T00:02:00Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Install dependencies",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-01-01T00:00:20Z",
+              "completedAt": "2026-01-01T00:00:22Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "bbbb",
+      "conclusion": "success",
+      "createdAt": "2026-01-02T00:00:00Z",
+      "runStartedAt": "2026-01-02T00:00:05Z",
+      "updatedAt": "2026-01-02T00:02:00Z",
+      "jobs": [
+        {
+          "id": 2002,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-01-02T00:00:05Z",
+          "startedAt": "2026-01-02T00:00:10Z",
+          "completedAt": "2026-01-02T00:02:00Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Install dependencies",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-01-02T00:00:20Z",
+              "completedAt": "2026-01-02T00:00:23Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "cccc",
+      "conclusion": "success",
+      "createdAt": "2026-01-03T00:00:00Z",
+      "runStartedAt": "2026-01-03T00:00:05Z",
+      "updatedAt": "2026-01-03T00:02:00Z",
+      "jobs": [
+        {
+          "id": 2003,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-01-03T00:00:05Z",
+          "startedAt": "2026-01-03T00:00:10Z",
+          "completedAt": "2026-01-03T00:02:00Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Install dependencies",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-01-03T00:00:20Z",
+              "completedAt": "2026-01-03T00:00:23Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

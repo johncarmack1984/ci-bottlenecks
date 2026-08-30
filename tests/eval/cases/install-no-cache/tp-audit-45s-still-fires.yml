@@ -1,0 +1,14 @@
+# eval: rule=install-no-cache expect=fire kind=tp jobs=build count=1
+# why: audit data shows install step median of 45s, finding still fires at medium
+# source: real-world repo with slow npm ci
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+      - name: Test
+        run: npm test

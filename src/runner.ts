@@ -74,7 +74,7 @@ function getInstallStepMedians(auditData: WorkflowAuditData, jobId: string, work
   return result;
 }
 
-function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDataByWorkflow?: Map<string, WorkflowAuditData>): Finding[] {
+function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDataByWorkflow?: Map<string, WorkflowAuditData>, pedantic?: boolean): Finding[] {
   if (!auditDataByWorkflow || auditDataByWorkflow.size === 0) return findings;
 
   const result: Finding[] = [];
@@ -98,12 +98,14 @@ function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDa
           const stepMedians = getInstallStepMedians(auditData, f.job, wf);
           const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5_000);
           if (allUnder5s) {
-            const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
-            result.push({
-              ...f,
-              severity: "info",
-              evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`,
-            });
+            if (pedantic) {
+              const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
+              result.push({
+                ...f,
+                severity: "info",
+                evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`,
+              });
+            }
             continue;
           }
         }
@@ -152,5 +154,5 @@ export function runRules(
     }
   }
 
-  return crossTierGate(findings, workflows, options.auditDataByWorkflow);
+  return crossTierGate(findings, workflows, options.auditDataByWorkflow, options.pedantic);
 }

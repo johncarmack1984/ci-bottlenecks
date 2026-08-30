@@ -1,0 +1,15 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: audit data shows install step median under 5s, cross-tier gate removes the finding
+# source: lux production run — bun install completes in 2-3s
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Test
+        run: bun test
