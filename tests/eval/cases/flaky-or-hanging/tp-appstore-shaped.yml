@@ -1,0 +1,13 @@
+# eval: rule=flaky-or-hanging expect=fire kind=tp count=1 jobs=deploy
+# why: median 53s but p95 28.8m — the absolute delta (27.9m) dwarfs the 5-minute floor
+# source: appstore-shaped production pattern — most deploys are sub-minute, occasional 35-minute hangs
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - run: deploy

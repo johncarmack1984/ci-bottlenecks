@@ -65,7 +65,8 @@ export const flakyOrHanging: Rule = {
       const med = median(sorted);
       const p95 = percentile(sorted, 95);
 
-      if (med > 0 && p95 >= med * 3) {
+      // Below 5 minutes of absolute spread, the worst case wastes less time than investigating it
+      if (med > 0 && p95 >= med * 3 && p95 - med >= 5 * 60_000) {
         const ratio = (p95 / med).toFixed(1);
         const jobId = matchJobId(jobName, workflow);
         const legName = extractLegName(jobName, workflow);

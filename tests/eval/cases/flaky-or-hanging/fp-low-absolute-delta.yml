@@ -1,0 +1,13 @@
+# eval: rule=flaky-or-hanging expect=silent kind=fp
+# why: ratio is 6x but p95-median is only 1.7m — a single 2-minute outlier on a 20s job wastes less time than investigating it
+# source: lux site.yml deploy job — fired HIGH at 3.0x with a 2-minute outlier on a 19s-median job
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: deploy

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    { "id": 1, "name": "CI", "workflowId": 1, "headSha": "as001", "conclusion": "success", "createdAt": "2024-01-01T00:00:00Z", "runStartedAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-01T00:02:00Z", "jobs": [{ "id": 101, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-01T00:00:00Z", "completedAt": "2024-01-01T00:00:44Z", "steps": [] }] },
+    { "id": 2, "name": "CI", "workflowId": 1, "headSha": "as002", "conclusion": "success", "createdAt": "2024-01-02T00:00:00Z", "runStartedAt": "2024-01-02T00:00:00Z", "updatedAt": "2024-01-02T00:02:00Z", "jobs": [{ "id": 102, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-02T00:00:00Z", "completedAt": "2024-01-02T00:00:51Z", "steps": [] }] },
+    { "id": 3, "name": "CI", "workflowId": 1, "headSha": "as003", "conclusion": "success", "createdAt": "2024-01-03T00:00:00Z", "runStartedAt": "2024-01-03T00:00:00Z", "updatedAt": "2024-01-03T00:02:00Z", "jobs": [{ "id": 103, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-03T00:00:00Z", "completedAt": "2024-01-03T00:00:53Z", "steps": [] }] },
+    { "id": 4, "name": "CI", "workflowId": 1, "headSha": "as004", "conclusion": "success", "createdAt": "2024-01-04T00:00:00Z", "runStartedAt": "2024-01-04T00:00:00Z", "updatedAt": "2024-01-04T00:04:00Z", "jobs": [{ "id": 104, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-04T00:00:00Z", "completedAt": "2024-01-04T00:02:42Z", "steps": [] }] },
+    { "id": 5, "name": "CI", "workflowId": 1, "headSha": "as005", "conclusion": "success", "createdAt": "2024-01-05T00:00:00Z", "runStartedAt": "2024-01-05T00:00:00Z", "updatedAt": "2024-01-05T00:37:00Z", "jobs": [{ "id": 105, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-05T00:00:00Z", "completedAt": "2024-01-05T00:35:18Z", "steps": [] }] }
+  ]
+}
