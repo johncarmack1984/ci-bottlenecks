@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { createRequire } from "node:module";
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
@@ -1577,12 +1578,12 @@ var require_log = __commonJS(function(exports) {
     if (logLevel === "debug")
       console.log(...messages);
   }
-  function warn(logLevel, warning2) {
+  function warn(logLevel, warning) {
     if (logLevel === "debug" || logLevel === "warn") {
       if (typeof node_process.emitWarning === "function")
-        node_process.emitWarning(warning2);
+        node_process.emitWarning(warning);
       else
-        console.warn(warning2);
+        console.warn(warning);
     }
   }
   exports.debug = debug;
@@ -4822,9 +4823,9 @@ var require_composer = __commonJS(function(exports) {
       this.prelude = [];
       this.errors = [];
       this.warnings = [];
-      this.onError = (source, code, message, warning2) => {
+      this.onError = (source, code, message, warning) => {
         const pos = getErrorPos(source);
-        if (warning2)
+        if (warning)
           this.warnings.push(new errors.YAMLWarning(pos, code, message));
         else
           this.errors.push(new errors.YAMLParseError(pos, code, message));
@@ -4885,10 +4886,10 @@ ${cb}` : comment;
         console.dir(token, { depth: null });
       switch (token.type) {
         case "directive":
-          this.directives.add(token.source, (offset, message, warning2) => {
+          this.directives.add(token.source, (offset, message, warning) => {
             const pos = getErrorPos(token);
             pos[0] += offset;
-            this.onError(pos, "BAD_DIRECTIVE", message, warning2);
+            this.onError(pos, "BAD_DIRECTIVE", message, warning);
           });
           this.prelude.push(token.source);
           this.atDirectives = true;
@@ -6906,7 +6907,7 @@ var require_public_api = __commonJS(function(exports) {
     const doc = parseDocument(src, options);
     if (!doc)
       return null;
-    doc.warnings.forEach((warning2) => log.warn(doc.options.logLevel, warning2));
+    doc.warnings.forEach((warning) => log.warn(doc.options.logLevel, warning));
     if (doc.errors.length > 0) {
       if (doc.options.logLevel !== "silent")
         throw doc.errors[0];
@@ -6943,58 +6944,7 @@ var require_public_api = __commonJS(function(exports) {
   exports.stringify = stringify;
 });
 
-// src/actions-shim.ts
-import { appendFileSync } from "fs";
-function getInput(name) {
-  return process.env[`INPUT_${name.replace(/-/g, "_").toUpperCase()}`] ?? "";
-}
-function getBooleanInput(name) {
-  return getInput(name).toLowerCase() === "true";
-}
-function setOutput(name, value) {
-  const outputFile = process.env.GITHUB_OUTPUT;
-  if (!outputFile)
-    return;
-  if (value.includes(`
-`)) {
-    const delim = `ghadelimiter_${Date.now()}`;
-    appendFileSync(outputFile, `${name}<<${delim}
-${value}
-${delim}
-`);
-  } else {
-    appendFileSync(outputFile, `${name}=${value}
-`);
-  }
-}
-function warning(msg) {
-  process.stdout.write(`::warning::${msg}
-`);
-}
-function info(msg) {
-  process.stdout.write(`${msg}
-`);
-}
-function setFailed(msg) {
-  process.stdout.write(`::error::${msg}
-`);
-  process.exitCode = 1;
-}
-var summary = {
-  _buffer: "",
-  addRaw(text) {
-    this._buffer += text;
-    return this;
-  },
-  async write() {
-    const path = process.env.GITHUB_STEP_SUMMARY;
-    if (path)
-      appendFileSync(path, this._buffer);
-    this._buffer = "";
-  }
-};
-
-// src/action.ts
+// src/cli.ts
 import { readFileSync as readFileSync2, writeFileSync as writeFileSync2, mkdirSync as mkdirSync2 } from "fs";
 import { join as join2, relative } from "path";
 
@@ -9068,6 +9018,12 @@ ${c("\x1B[1m", workflow)}`);
 `;
 }
 
+// src/format/json.ts
+function formatJson(findings) {
+  return JSON.stringify(findings, null, 2) + `
+`;
+}
+
 // src/format/sarif.ts
 var SEVERITY_TO_LEVEL = {
   high: "error",
@@ -9192,10 +9148,6 @@ No findings.
 `);
 }
 
-// src/shared.ts
-import { readdirSync, existsSync as existsSync2 } from "fs";
-import { join } from "path";
-
 // src/api.ts
 import { execSync } from "node:child_process";
 var API_BASE = "https://api.github.com";
@@ -9272,6 +9224,26 @@ async function fetchJobsForRun(nwo, runId) {
     return [];
   return jobs.map((j) => mapJob(j));
 }
+function detectNwo() {
+  try {
+    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    if (!url)
+      return null;
+    const sshMatch = url.match(/git@[^:]+:(.+?)(?:\.git)?$/);
+    if (sshMatch)
+      return sshMatch[1];
+    const httpsMatch = url.match(/github\.com\/(.+?)(?:\.git)?$/);
+    if (httpsMatch)
+      return httpsMatch[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// src/shared.ts
+import { readdirSync, existsSync as existsSync2 } from "fs";
+import { join } from "path";
 
 // src/cache.ts
 import { existsSync, mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
@@ -9335,78 +9307,159 @@ async function loadAuditData(nwo, workflows, maxRuns, log) {
   return map;
 }
 
-// src/action.ts
-async function run() {
-  const basePath = getInput("path") || ".";
-  const audit = getBooleanInput("audit");
-  const pedantic = getBooleanInput("pedantic");
-  const maxRuns = parseInt(getInput("runs") || "50", 10);
-  const failOn = getInput("fail-on") || "high";
-  const formats = (getInput("format") || "text,summary,sarif").split(",").map((s) => s.trim());
-  const token = getInput("token");
-  if (token) {
-    process.env.GITHUB_TOKEN = token;
+// src/cli.ts
+var VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
+var VALID_SEVERITIES = new Set(["high", "medium", "low", "info"]);
+function parseArgs(argv) {
+  const args = {
+    audit: false,
+    pedantic: false,
+    runs: 50,
+    formats: [],
+    failOn: "high",
+    path: ".",
+    sarifOutput: ""
+  };
+  for (let i = 0;i < argv.length; i++) {
+    const arg = argv[i];
+    switch (arg) {
+      case "--audit":
+        args.audit = true;
+        break;
+      case "--pedantic":
+        args.pedantic = true;
+        break;
+      case "--runs":
+        args.runs = parseInt(argv[++i] ?? "50", 10);
+        break;
+      case "--format": {
+        const fmt = argv[++i] ?? "text";
+        if (!VALID_FORMATS.has(fmt)) {
+          process.stderr.write(`Unknown format: "${fmt}". Valid formats: ${[...VALID_FORMATS].join(", ")}
+`);
+          process.exit(2);
+        }
+        args.formats.push(fmt);
+        break;
+      }
+      case "--fail-on": {
+        const sev = argv[++i] ?? "high";
+        if (!VALID_SEVERITIES.has(sev)) {
+          process.stderr.write(`Unknown severity: "${sev}". Valid values: ${[...VALID_SEVERITIES].join(", ")}
+`);
+          process.exit(2);
+        }
+        args.failOn = sev;
+        break;
+      }
+      case "--sarif-output":
+        args.sarifOutput = argv[++i] ?? "";
+        break;
+      default:
+        if (!arg.startsWith("-"))
+          args.path = arg;
+    }
   }
+  if (args.formats.length === 0)
+    args.formats.push("text");
+  return args;
+}
+var SEVERITY_ORDER2 = {
+  high: 0,
+  medium: 1,
+  low: 2,
+  info: 3
+};
+function meetsThreshold(finding, threshold) {
+  return SEVERITY_ORDER2[finding.severity] <= SEVERITY_ORDER2[threshold];
+}
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const basePath = args.path;
   const workflowFiles = discoverWorkflows(basePath);
   if (workflowFiles.length === 0) {
-    warning(`No workflow files found in ${join2(basePath, ".github/workflows")}`);
-    setOutput("findings", "0");
-    return;
+    process.stderr.write(`No workflow files found in ${join2(basePath, ".github/workflows")}
+`);
+    process.exit(2);
   }
-  const workflows = workflowFiles.map((file) => {
+  const workflows = [];
+  for (const file of workflowFiles) {
     const source = readFileSync2(file, "utf-8");
     const relPath = relative(basePath, file);
-    return parseWorkflow(relPath, source);
-  }).filter((wf) => wf != null);
-  let auditDataByWorkflow;
-  if (audit) {
-    const nwo = process.env.GITHUB_REPOSITORY;
-    if (nwo) {
-      if (!token) {
-        warning("audit mode requested but no token provided, skipping audit.");
-      } else {
-        info(`Auditing ${nwo} (${maxRuns} runs max)...`);
-        auditDataByWorkflow = await loadAuditData(nwo, workflows, maxRuns);
-      }
+    const parsed = parseWorkflow(relPath, source);
+    if (parsed) {
+      workflows.push(parsed);
     } else {
-      warning("GITHUB_REPOSITORY not set, skipping audit.");
+      process.stderr.write(`Warning: failed to parse ${relPath}
+`);
+    }
+  }
+  if (workflows.length === 0) {
+    process.stderr.write(`No valid workflow files parsed.
+`);
+    process.exit(2);
+  }
+  let auditDataByWorkflow;
+  if (args.audit) {
+    const nwo = detectNwo();
+    if (!nwo) {
+      process.stderr.write(`Could not detect repository (no git remote). Skipping audit.
+`);
+    } else {
+      process.stderr.write(`Auditing ${nwo} (${args.runs} runs max)...
+`);
+      auditDataByWorkflow = await loadAuditData(nwo, workflows, args.runs, (msg) => process.stderr.write(`${msg}
+`));
     }
   }
   const findings = runRules(allRules, workflows, {
-    audit,
-    pedantic,
+    audit: args.audit,
+    pedantic: args.pedantic,
     auditDataByWorkflow
   });
-  setOutput("findings", String(findings.length));
-  if (formats.includes("text")) {
-    info(formatText(findings));
+  for (const fmt of args.formats) {
+    switch (fmt) {
+      case "text":
+        process.stdout.write(formatText(findings));
+        break;
+      case "json":
+        process.stdout.write(formatJson(findings));
+        break;
+      case "sarif": {
+        const sarif = formatSarif(findings, allRules);
+        const sarifStr = JSON.stringify(sarif, null, 2) + `
+`;
+        if (args.sarifOutput) {
+          const dir = args.sarifOutput.split("/").slice(0, -1).join("/");
+          if (dir)
+            mkdirSync2(dir, { recursive: true });
+          writeFileSync2(args.sarifOutput, sarifStr);
+          process.stderr.write(`SARIF written to ${args.sarifOutput}
+`);
+        } else {
+          process.stdout.write(sarifStr);
+        }
+        break;
+      }
+      case "summary": {
+        const md = formatSummary(findings);
+        const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+        if (summaryPath) {
+          writeFileSync2(summaryPath, md, { flag: "a" });
+          process.stderr.write(`Summary written to $GITHUB_STEP_SUMMARY
+`);
+        } else {
+          process.stdout.write(md);
+        }
+        break;
+      }
+    }
   }
-  if (formats.includes("summary")) {
-    const md = formatSummary(findings);
-    summary.addRaw(md);
-    await summary.write();
-  }
-  if (formats.includes("sarif")) {
-    const sarif = formatSarif(findings, allRules);
-    const sarifDir = basePath === "." ? "" : basePath;
-    const sarifPath = sarifDir ? join2(sarifDir, "ci-bottlenecks.sarif") : "ci-bottlenecks.sarif";
-    if (sarifDir)
-      mkdirSync2(sarifDir, { recursive: true });
-    writeFileSync2(sarifPath, JSON.stringify(sarif, null, 2));
-    setOutput("sarif-path", sarifPath);
-    info(`SARIF written to ${sarifPath}`);
-  }
-  const SEVERITY_ORDER2 = {
-    high: 0,
-    medium: 1,
-    low: 2,
-    info: 3
-  };
-  const hasAboveThreshold = findings.some((f) => SEVERITY_ORDER2[f.severity] <= SEVERITY_ORDER2[failOn]);
-  if (hasAboveThreshold) {
-    setFailed(`${findings.length} finding(s) at or above "${failOn}" severity`);
-  }
+  const hasAboveThreshold = findings.some((f) => meetsThreshold(f, args.failOn));
+  process.exit(hasAboveThreshold ? 1 : 0);
 }
-run().catch((e) => {
-  setFailed(`ci-bottlenecks failed: ${e.message}`);
+main().catch((e) => {
+  process.stderr.write(`Error: ${e.message}
+`);
+  process.exit(2);
 });
