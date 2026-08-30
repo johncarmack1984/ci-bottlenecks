@@ -50,20 +50,18 @@ export const doubleTrigger: Rule = {
     if (!prTriggersOnPush(pr)) return [];
     if (!branchesOverlap(push, pr)) return [];
 
-    const pushDesc = push.branches
-      ? `[${push.branches.join(", ")}]`
-      : "(all branches)";
-    const prDesc = pr.branches
-      ? `[${pr.branches.join(", ")}]`
-      : "(all branches)";
+    const fmtBranches = (b: unknown) => Array.isArray(b) ? `[${b.join(", ")}]` : "(all branches)";
+    const pushDesc = fmtBranches(push.branches);
+    const prDesc = fmtBranches(pr.branches);
 
     // Build patch that preserves existing tags/paths
+    const fmtArr = (v: unknown) => Array.isArray(v) ? v.join(", ") : String(v);
     const patchParts = ["on:", "  push:"];
     patchParts.push("    branches: [main]");
-    if (push.tags) patchParts.push(`    tags: [${push.tags.join(", ")}]`);
-    if (push["tags-ignore"]) patchParts.push(`    tags-ignore: [${push["tags-ignore"].join(", ")}]`);
-    if (push.paths) patchParts.push(`    paths: [${push.paths.join(", ")}]`);
-    if (push["paths-ignore"]) patchParts.push(`    paths-ignore: [${push["paths-ignore"].join(", ")}]`);
+    if (push.tags) patchParts.push(`    tags: [${fmtArr(push.tags)}]`);
+    if (push["tags-ignore"]) patchParts.push(`    tags-ignore: [${fmtArr(push["tags-ignore"])}]`);
+    if (push.paths) patchParts.push(`    paths: [${fmtArr(push.paths)}]`);
+    if (push["paths-ignore"]) patchParts.push(`    paths-ignore: [${fmtArr(push["paths-ignore"])}]`);
 
     return [
       {
