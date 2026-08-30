@@ -8,7 +8,7 @@ test:
     bun test
 
 lint:
-    tsc --noEmit
+    bun run lint
 
 check: install lint test build
 
