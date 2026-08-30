@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, relative } from "path";
 import { parseWorkflow } from "./parser.ts";
 import { runRules } from "./runner.ts";
@@ -7,9 +7,12 @@ import { formatText } from "./format/text.ts";
 import { formatJson } from "./format/json.ts";
 import { formatSarif } from "./format/sarif.ts";
 import { formatSummary } from "./format/summary.ts";
-import { fetchRuns, fetchJobsForRun, detectNwo } from "./api.ts";
-import { cachedFetch, DEFAULT_CACHE_DIR } from "./cache.ts";
-import type { Finding, Severity, ParsedWorkflow, WorkflowAuditData, RunData } from "./types.ts";
+import { detectNwo } from "./api.ts";
+import { discoverWorkflows, loadAuditData } from "./shared.ts";
+import type { Finding, Severity, ParsedWorkflow, WorkflowAuditData } from "./types.ts";
+
+const VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
+const VALID_SEVERITIES = new Set(["high", "medium", "low", "info"]);
 
 function parseArgs(argv: string[]) {
   const args = {
@@ -34,12 +37,24 @@ function parseArgs(argv: string[]) {
       case "--runs":
         args.runs = parseInt(argv[++i] ?? "50", 10);
         break;
-      case "--format":
-        args.formats.push(argv[++i] ?? "text");
+      case "--format": {
+        const fmt = argv[++i] ?? "text";
+        if (!VALID_FORMATS.has(fmt)) {
+          process.stderr.write(`Unknown format: "${fmt}". Valid formats: ${[...VALID_FORMATS].join(", ")}\n`);
+          process.exit(2);
+        }
+        args.formats.push(fmt);
         break;
-      case "--fail-on":
-        args.failOn = (argv[++i] ?? "high") as Severity;
+      }
+      case "--fail-on": {
+        const sev = argv[++i] ?? "high";
+        if (!VALID_SEVERITIES.has(sev)) {
+          process.stderr.write(`Unknown severity: "${sev}". Valid values: ${[...VALID_SEVERITIES].join(", ")}\n`);
+          process.exit(2);
+        }
+        args.failOn = sev as Severity;
         break;
+      }
       case "--sarif-output":
         args.sarifOutput = argv[++i] ?? "";
         break;
@@ -52,18 +67,6 @@ function parseArgs(argv: string[]) {
   return args;
 }
 
-function discoverWorkflows(basePath: string): string[] {
-  const wfDir = join(basePath, ".github", "workflows");
-  if (!existsSync(wfDir)) return [];
-  try {
-    return readdirSync(wfDir)
-      .filter((f) => f.endsWith(".yml") || f.endsWith(".yaml"))
-      .map((f) => join(wfDir, f));
-  } catch {
-    return [];
-  }
-}
-
 const SEVERITY_ORDER: Record<Severity, number> = {
   high: 0,
   medium: 1,
@@ -73,52 +76,6 @@ const SEVERITY_ORDER: Record<Severity, number> = {
 
 function meetsThreshold(finding: Finding, threshold: Severity): boolean {
   return SEVERITY_ORDER[finding.severity] <= SEVERITY_ORDER[threshold];
-}
-
-async function loadAuditData(
-  nwo: string,
-  workflows: ParsedWorkflow[],
-  maxRuns: number,
-): Promise<Map<string, WorkflowAuditData>> {
-  const cacheDir = DEFAULT_CACHE_DIR;
-  const map = new Map<string, WorkflowAuditData>();
-
-  const runs = await cachedFetch(
-    cacheDir,
-    `${nwo.replace("/", "_")}/runs`,
-    60 * 60 * 1000,
-    () => fetchRuns(nwo, maxRuns),
-  );
-
-  if (runs.length === 0) {
-    process.stderr.write("No completed runs found for this repository.\n");
-    return map;
-  }
-
-  process.stderr.write(`Fetched ${runs.length} runs, loading job data...\n`);
-
-  const enrichedRuns: RunData[] = [];
-  for (const run of runs.slice(0, maxRuns)) {
-    const jobs = await cachedFetch(
-      cacheDir,
-      `${nwo.replace("/", "_")}/jobs/${run.id}`,
-      0,
-      () => fetchJobsForRun(nwo, run.id),
-    );
-    enrichedRuns.push({ ...run, jobs });
-  }
-
-  for (const wf of workflows) {
-    const wfRuns = enrichedRuns.filter((r) => {
-      const wfFileName = wf.path.split("/").pop()?.replace(/\.ya?ml$/, "");
-      return r.name === wf.name || r.name === wfFileName;
-    });
-    if (wfRuns.length > 0) {
-      map.set(wf.path, { runs: wfRuns });
-    }
-  }
-
-  return map;
 }
 
 async function main() {
@@ -138,7 +95,11 @@ async function main() {
     const source = readFileSync(file, "utf-8");
     const relPath = relative(basePath, file);
     const parsed = parseWorkflow(relPath, source);
-    if (parsed) workflows.push(parsed);
+    if (parsed) {
+      workflows.push(parsed);
+    } else {
+      process.stderr.write(`Warning: failed to parse ${relPath}\n`);
+    }
   }
 
   if (workflows.length === 0) {
@@ -156,7 +117,9 @@ async function main() {
       );
     } else {
       process.stderr.write(`Auditing ${nwo} (${args.runs} runs max)...\n`);
-      auditDataByWorkflow = await loadAuditData(nwo, workflows, args.runs);
+      auditDataByWorkflow = await loadAuditData(nwo, workflows, args.runs, (msg) =>
+        process.stderr.write(`${msg}\n`),
+      );
     }
   }
 
