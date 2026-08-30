@@ -7364,7 +7364,7 @@ function getInstallStepMedians(auditData, jobId, workflow) {
   }
   return result;
 }
-function crossTierGate(findings, workflows, auditDataByWorkflow) {
+function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
   if (!auditDataByWorkflow || auditDataByWorkflow.size === 0)
     return findings;
   const result = [];
@@ -7386,12 +7386,14 @@ function crossTierGate(findings, workflows, auditDataByWorkflow) {
           const stepMedians = getInstallStepMedians(auditData, f.job, wf);
           const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5000);
           if (allUnder5s) {
-            const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
-            result.push({
-              ...f,
-              severity: "info",
-              evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
-            });
+            if (pedantic) {
+              const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
+              result.push({
+                ...f,
+                severity: "info",
+                evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
+              });
+            }
             continue;
           }
         }
@@ -7432,7 +7434,7 @@ function runRules(rules, workflows, options) {
       }
     }
   }
-  return crossTierGate(findings, workflows, options.auditDataByWorkflow);
+  return crossTierGate(findings, workflows, options.auditDataByWorkflow, options.pedantic);
 }
 
 // src/rules/no-timeout.ts
@@ -9587,7 +9589,7 @@ Remediation: ${f.remediation}`
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.0",
+            version: "0.1.1",
             informationUri: "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors
           }
@@ -9638,9 +9640,9 @@ No findings.
     }
     lines.push("");
   }
-  const withSavings = findings.filter((f) => f.estimatedSavings?.minutesPerRun);
-  if (withSavings.length > 0) {
-    const totalSavings = withSavings.reduce((sum, f) => sum + (f.estimatedSavings?.minutesPerRun ?? 0), 0);
+  const exactSavings = findings.filter((f) => f.estimatedSavings?.minutesPerRun && f.estimatedSavings.confidence === "exact");
+  if (exactSavings.length > 0) {
+    const totalSavings = exactSavings.reduce((sum, f) => sum + (f.estimatedSavings?.minutesPerRun ?? 0), 0);
     lines.push(`**Estimated savings:** ~${totalSavings.toFixed(1)} minutes per run
 `);
   }
@@ -9709,8 +9711,32 @@ function mapRun(r) {
     jobs: []
   };
 }
-async function fetchRuns(nwo, count) {
-  const data = await apiGet(`/repos/${nwo}/actions/runs?per_page=${count}&status=completed`);
+async function fetchWorkflows(nwo) {
+  const results = [];
+  let page = 1;
+  while (true) {
+    const data = await apiGet(`/repos/${nwo}/actions/workflows?per_page=100&page=${page}`);
+    if (!data || typeof data !== "object")
+      break;
+    const workflows = data.workflows;
+    if (!Array.isArray(workflows) || workflows.length === 0)
+      break;
+    for (const w of workflows) {
+      const wf = w;
+      results.push({
+        id: wf.id,
+        path: wf.path,
+        name: wf.name
+      });
+    }
+    if (workflows.length < 100)
+      break;
+    page++;
+  }
+  return results;
+}
+async function fetchRunsForWorkflow(nwo, workflowId, count) {
+  const data = await apiGet(`/repos/${nwo}/actions/workflows/${workflowId}/runs?per_page=${count}&status=completed`);
   if (!data || typeof data !== "object")
     return [];
   const runs = data.workflow_runs;
@@ -9804,31 +9830,33 @@ function discoverWorkflows(basePath) {
 async function loadAuditData(nwo, workflows, maxRuns, log) {
   const cacheDir = DEFAULT_CACHE_DIR;
   const map = new Map;
-  const runs = await cachedFetch(cacheDir, `${nwo.replace("/", "_")}/runs`, 60 * 60 * 1000, () => fetchRuns(nwo, maxRuns));
-  if (runs.length === 0) {
-    log?.("No completed runs found for this repository.");
+  const nwoSlug = nwo.replace("/", "_");
+  const apiWorkflows = await cachedFetch(cacheDir, `${nwoSlug}/workflows`, 60 * 60 * 1000, () => fetchWorkflows(nwo));
+  if (apiWorkflows.length === 0) {
+    log?.("No workflows found via API.");
     return map;
   }
-  log?.(`Fetched ${runs.length} runs, loading job data...`);
-  const enrichedRuns = [];
-  for (const run of runs.slice(0, maxRuns)) {
-    const jobs = await cachedFetch(cacheDir, `${nwo.replace("/", "_")}/jobs/${run.id}`, 0, () => fetchJobsForRun(nwo, run.id));
-    enrichedRuns.push({ ...run, jobs });
-  }
   for (const wf of workflows) {
-    const wfRuns = enrichedRuns.filter((r) => {
-      const wfFileName = wf.path.split("/").pop()?.replace(/\.ya?ml$/, "");
-      return r.name === wf.name || r.name === wfFileName;
-    });
-    if (wfRuns.length > 0) {
-      map.set(wf.path, { runs: wfRuns });
+    const apiWf = apiWorkflows.find((aw) => aw.path === wf.path);
+    if (!apiWf)
+      continue;
+    const pathSlug = wf.path.replace(/[/\\]/g, "_").replace(/\.ya?ml$/, "");
+    const runs = await cachedFetch(cacheDir, `${nwoSlug}/workflow_runs/${pathSlug}_${maxRuns}`, 60 * 60 * 1000, () => fetchRunsForWorkflow(nwo, apiWf.id, maxRuns));
+    if (runs.length === 0)
+      continue;
+    log?.(`${wf.path}: ${runs.length} runs, loading job data...`);
+    const enrichedRuns = [];
+    for (const run of runs) {
+      const jobs = await cachedFetch(cacheDir, `${nwoSlug}/jobs/${run.id}`, 0, () => fetchJobsForRun(nwo, run.id));
+      enrichedRuns.push({ ...run, jobs });
     }
+    map.set(wf.path, { runs: enrichedRuns });
   }
   return map;
 }
 
 // src/cli.ts
-var VERSION = "0.1.0";
+var VERSION = "0.1.1";
 var VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
 var VALID_SEVERITIES = new Set(["high", "medium", "low", "info", "none"]);
 function printUsage() {
@@ -9841,7 +9869,7 @@ Usage: ci-bottlenecks [path] [options]
 Options:
   --audit              Enable audit tier (pulls measured data from GitHub API)
   --pedantic           Enable pedantic rules
-  --runs N             Maximum number of completed runs to sample for audit (default: 50)
+  --runs N             Maximum completed runs to sample per workflow for audit (default: 25)
   --format FORMAT      Output format: text, json, sarif, summary (repeatable, default: text)
   --fail-on SEVERITY   Minimum severity to fail: high, medium, low, info, none (default: none)
   --repo OWNER/NAME    Override repository detection for audit mode
@@ -9860,7 +9888,7 @@ function parseArgs(argv) {
   const args = {
     audit: false,
     pedantic: false,
-    runs: 50,
+    runs: 25,
     formats: [],
     failOn: "none",
     path: ".",

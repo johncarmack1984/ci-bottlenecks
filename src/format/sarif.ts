@@ -108,7 +108,7 @@ export function formatSarif(findings: Finding[], rules: Rule[]): SarifReport {
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.0",
+            version: "0.1.1",
             informationUri:
               "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors,

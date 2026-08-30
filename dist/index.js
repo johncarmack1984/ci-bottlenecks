@@ -7414,7 +7414,7 @@ function getInstallStepMedians(auditData, jobId, workflow) {
   }
   return result;
 }
-function crossTierGate(findings, workflows, auditDataByWorkflow) {
+function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
   if (!auditDataByWorkflow || auditDataByWorkflow.size === 0)
     return findings;
   const result = [];
@@ -7436,12 +7436,14 @@ function crossTierGate(findings, workflows, auditDataByWorkflow) {
           const stepMedians = getInstallStepMedians(auditData, f.job, wf);
           const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5000);
           if (allUnder5s) {
-            const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
-            result.push({
-              ...f,
-              severity: "info",
-              evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
-            });
+            if (pedantic) {
+              const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
+              result.push({
+                ...f,
+                severity: "info",
+                evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
+              });
+            }
             continue;
           }
         }
@@ -7482,7 +7484,7 @@ function runRules(rules, workflows, options) {
       }
     }
   }
-  return crossTierGate(findings, workflows, options.auditDataByWorkflow);
+  return crossTierGate(findings, workflows, options.auditDataByWorkflow, options.pedantic);
 }
 
 // src/rules/no-timeout.ts
@@ -9631,7 +9633,7 @@ Remediation: ${f.remediation}`
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.0",
+            version: "0.1.1",
             informationUri: "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors
           }
@@ -9682,9 +9684,9 @@ No findings.
     }
     lines.push("");
   }
-  const withSavings = findings.filter((f) => f.estimatedSavings?.minutesPerRun);
-  if (withSavings.length > 0) {
-    const totalSavings = withSavings.reduce((sum, f) => sum + (f.estimatedSavings?.minutesPerRun ?? 0), 0);
+  const exactSavings = findings.filter((f) => f.estimatedSavings?.minutesPerRun && f.estimatedSavings.confidence === "exact");
+  if (exactSavings.length > 0) {
+    const totalSavings = exactSavings.reduce((sum, f) => sum + (f.estimatedSavings?.minutesPerRun ?? 0), 0);
     lines.push(`**Estimated savings:** ~${totalSavings.toFixed(1)} minutes per run
 `);
   }
@@ -9757,8 +9759,32 @@ function mapRun(r) {
     jobs: []
   };
 }
-async function fetchRuns(nwo, count) {
-  const data = await apiGet(`/repos/${nwo}/actions/runs?per_page=${count}&status=completed`);
+async function fetchWorkflows(nwo) {
+  const results = [];
+  let page = 1;
+  while (true) {
+    const data = await apiGet(`/repos/${nwo}/actions/workflows?per_page=100&page=${page}`);
+    if (!data || typeof data !== "object")
+      break;
+    const workflows = data.workflows;
+    if (!Array.isArray(workflows) || workflows.length === 0)
+      break;
+    for (const w of workflows) {
+      const wf = w;
+      results.push({
+        id: wf.id,
+        path: wf.path,
+        name: wf.name
+      });
+    }
+    if (workflows.length < 100)
+      break;
+    page++;
+  }
+  return results;
+}
+async function fetchRunsForWorkflow(nwo, workflowId, count) {
+  const data = await apiGet(`/repos/${nwo}/actions/workflows/${workflowId}/runs?per_page=${count}&status=completed`);
   if (!data || typeof data !== "object")
     return [];
   const runs = data.workflow_runs;
@@ -9832,25 +9858,27 @@ function discoverWorkflows(basePath) {
 async function loadAuditData(nwo, workflows, maxRuns, log) {
   const cacheDir = DEFAULT_CACHE_DIR;
   const map = new Map;
-  const runs = await cachedFetch(cacheDir, `${nwo.replace("/", "_")}/runs`, 60 * 60 * 1000, () => fetchRuns(nwo, maxRuns));
-  if (runs.length === 0) {
-    log?.("No completed runs found for this repository.");
+  const nwoSlug = nwo.replace("/", "_");
+  const apiWorkflows = await cachedFetch(cacheDir, `${nwoSlug}/workflows`, 60 * 60 * 1000, () => fetchWorkflows(nwo));
+  if (apiWorkflows.length === 0) {
+    log?.("No workflows found via API.");
     return map;
   }
-  log?.(`Fetched ${runs.length} runs, loading job data...`);
-  const enrichedRuns = [];
-  for (const run of runs.slice(0, maxRuns)) {
-    const jobs = await cachedFetch(cacheDir, `${nwo.replace("/", "_")}/jobs/${run.id}`, 0, () => fetchJobsForRun(nwo, run.id));
-    enrichedRuns.push({ ...run, jobs });
-  }
   for (const wf of workflows) {
-    const wfRuns = enrichedRuns.filter((r) => {
-      const wfFileName = wf.path.split("/").pop()?.replace(/\.ya?ml$/, "");
-      return r.name === wf.name || r.name === wfFileName;
-    });
-    if (wfRuns.length > 0) {
-      map.set(wf.path, { runs: wfRuns });
+    const apiWf = apiWorkflows.find((aw) => aw.path === wf.path);
+    if (!apiWf)
+      continue;
+    const pathSlug = wf.path.replace(/[/\\]/g, "_").replace(/\.ya?ml$/, "");
+    const runs = await cachedFetch(cacheDir, `${nwoSlug}/workflow_runs/${pathSlug}_${maxRuns}`, 60 * 60 * 1000, () => fetchRunsForWorkflow(nwo, apiWf.id, maxRuns));
+    if (runs.length === 0)
+      continue;
+    log?.(`${wf.path}: ${runs.length} runs, loading job data...`);
+    const enrichedRuns = [];
+    for (const run of runs) {
+      const jobs = await cachedFetch(cacheDir, `${nwoSlug}/jobs/${run.id}`, 0, () => fetchJobsForRun(nwo, run.id));
+      enrichedRuns.push({ ...run, jobs });
     }
+    map.set(wf.path, { runs: enrichedRuns });
   }
   return map;
 }
@@ -9860,7 +9888,7 @@ async function run() {
   const basePath = getInput("path") || ".";
   const audit = getBooleanInput("audit");
   const pedantic = getBooleanInput("pedantic");
-  const maxRuns = parseInt(getInput("runs") || "50", 10);
+  const maxRuns = parseInt(getInput("runs") || "25", 10);
   const failOn = getInput("fail-on") || "none";
   const formats = (getInput("format") || "text,summary,sarif").split(",").map((s) => s.trim());
   const token = getInput("token");

@@ -13,7 +13,7 @@ describe("SARIF output", () => {
   it("has correct tool name", () => {
     const sarif = formatSarif([], allRules);
     expect(sarif.runs[0]!.tool.driver.name).toBe("ci-bottlenecks");
-    expect(sarif.runs[0]!.tool.driver.version).toBe("0.1.0");
+    expect(sarif.runs[0]!.tool.driver.version).toBe("0.1.1");
   });
 
   it("includes all rules", () => {
