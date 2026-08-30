@@ -20,3 +20,6 @@ audit *ARGS:
 
 eval:
     bun run src/eval.ts
+
+eval-score *ARGS:
+    bun run src/eval-score.ts {{ARGS}}
