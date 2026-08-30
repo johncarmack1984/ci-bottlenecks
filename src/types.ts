@@ -123,6 +123,7 @@ export interface RunData {
   name: string;
   workflowId: number;
   headSha: string;
+  event: string;
   conclusion: string;
   createdAt: string;
   runStartedAt: string | null;

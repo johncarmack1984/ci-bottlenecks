@@ -1,0 +1,15 @@
+# eval: rule=double-run-measured expect=silent kind=fp
+# why: manual dispatch seconds after a push is intentional, not a double-trigger
+# source: lux ci-bottlenecks.yml — dispatch fired seconds after a push run on the same SHA
+name: CI
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

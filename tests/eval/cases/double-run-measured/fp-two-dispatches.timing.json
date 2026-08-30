@@ -3,7 +3,7 @@
     {
       "id": 1, "name": "CI", "workflowId": 1,
       "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "event": "push",
+      "event": "workflow_dispatch",
       "conclusion": "success",
       "createdAt": "2024-01-01T00:00:00Z",
       "runStartedAt": "2024-01-01T00:00:05Z",
@@ -13,15 +13,15 @@
       ]
     },
     {
-      "id": 2, "name": "Deploy", "workflowId": 2,
+      "id": 2, "name": "CI", "workflowId": 1,
       "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "event": "push",
+      "event": "workflow_dispatch",
       "conclusion": "success",
-      "createdAt": "2024-01-01T00:00:30Z",
-      "runStartedAt": "2024-01-01T00:00:35Z",
-      "updatedAt": "2024-01-01T00:05:30Z",
+      "createdAt": "2024-01-01T00:00:07Z",
+      "runStartedAt": "2024-01-01T00:00:12Z",
+      "updatedAt": "2024-01-01T00:05:07Z",
       "jobs": [
-        { "id": 2, "name": "deploy", "conclusion": "success", "startedAt": "2024-01-01T00:00:40Z", "completedAt": "2024-01-01T00:05:40Z", "steps": [] }
+        { "id": 2, "name": "build", "conclusion": "success", "startedAt": "2024-01-01T00:00:17Z", "completedAt": "2024-01-01T00:05:17Z", "steps": [] }
       ]
     }
   ]

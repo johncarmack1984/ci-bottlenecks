@@ -3,6 +3,7 @@
     {
       "id": 1, "name": "CI", "workflowId": 1,
       "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
       "conclusion": "success",
       "createdAt": "2024-01-01T00:00:00Z",
       "runStartedAt": "2024-01-01T00:00:05Z",
@@ -14,6 +15,7 @@
     {
       "id": 2, "name": "CI", "workflowId": 1,
       "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
       "conclusion": "success",
       "createdAt": "2024-01-01T00:00:30Z",
       "runStartedAt": "2024-01-01T00:00:35Z",

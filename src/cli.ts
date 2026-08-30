@@ -253,6 +253,7 @@ function writeRecordedSnapshots(
         name: run.name,
         workflowId: run.workflowId,
         headSha: run.headSha.replace(/./g, "a"),
+        event: run.event,
         conclusion: run.conclusion,
         createdAt: run.createdAt,
         runStartedAt: run.runStartedAt,

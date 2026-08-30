@@ -57,6 +57,7 @@ function mapRun(r: Record<string, unknown>): RunData {
     name: r.name as string,
     workflowId: r.workflow_id as number,
     headSha: r.head_sha as string,
+    event: (r.event as string) ?? "",
     conclusion: (r.conclusion as string) ?? "",
     createdAt: r.created_at as string,
     runStartedAt: (r.run_started_at as string) ?? null,

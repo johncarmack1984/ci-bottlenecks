@@ -1,0 +1,13 @@
+# eval: rule=double-run-measured expect=silent kind=fp
+# why: two manual dispatches on the same SHA are intentional re-runs, not a trigger misconfiguration
+# source: lux node-build.yml — workflow_dispatch-only workflow fired twice 7s apart on SHA a28e8e0
+name: CI
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

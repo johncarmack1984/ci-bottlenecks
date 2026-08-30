@@ -28,7 +28,9 @@ export const doubleRunMeasured: Rule = {
     const findings: Finding[] = [];
     const groups = new Map<string, typeof auditData.runs>();
 
+    const PAIRABLE_EVENTS = new Set(["push", "pull_request"]);
     for (const run of auditData.runs) {
+      if (!PAIRABLE_EVENTS.has(run.event)) continue;
       const key = `${run.name}::${run.headSha}`;
       const arr = groups.get(key) ?? [];
       arr.push(run);
@@ -60,7 +62,7 @@ export const doubleRunMeasured: Rule = {
         tier: "audit",
         workflow: workflow.path,
         message: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total`,
-        evidence: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total minutes`,
+        evidence: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total`,
         remediation: "Restrict the push trigger to the default branch to prevent duplicate runs on PR pushes.",
         estimatedSavings: {
           confidence: "exact",
