@@ -9019,7 +9019,7 @@ var flakyOrHanging = {
       const sorted = [...durations].sort((a, b) => a - b);
       const med = median(sorted);
       const p95 = percentile(sorted, 95);
-      if (med > 0 && p95 >= med * 3) {
+      if (med > 0 && p95 >= med * 3 && p95 - med >= 5 * 60000) {
         const ratio = (p95 / med).toFixed(1);
         const jobId = matchJobId(jobName, workflow);
         const legName = extractLegName(jobName, workflow);
@@ -9388,7 +9388,10 @@ var doubleRunMeasured = {
       return [];
     const findings = [];
     const groups = new Map;
+    const PAIRABLE_EVENTS = new Set(["push", "pull_request"]);
     for (const run of auditData.runs) {
+      if (!PAIRABLE_EVENTS.has(run.event))
+        continue;
       const key = `${run.name}::${run.headSha}`;
       const arr = groups.get(key) ?? [];
       arr.push(run);
@@ -9413,7 +9416,7 @@ var doubleRunMeasured = {
         tier: "audit",
         workflow: workflow.path,
         message: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total`,
-        evidence: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total minutes`,
+        evidence: `${runs.length} runs on SHA ${sha} within ${fmtMinutes(gapMs)}, costing ${fmtMinutes(totalMinutes)} total`,
         remediation: "Restrict the push trigger to the default branch to prevent duplicate runs on PR pushes.",
         estimatedSavings: {
           confidence: "exact",
@@ -9752,6 +9755,7 @@ function mapRun(r) {
     name: r.name,
     workflowId: r.workflow_id,
     headSha: r.head_sha,
+    event: r.event ?? "",
     conclusion: r.conclusion ?? "",
     createdAt: r.created_at,
     runStartedAt: r.run_started_at ?? null,
