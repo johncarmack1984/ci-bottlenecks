@@ -1,0 +1,15 @@
+# eval: rule=no-timeout expect=silent kind=fp
+# why: the ignore directive sits at the top of a multi-line comment block above the job — the whole contiguous block must be scanned, not just the nearest line
+# source: lux appstore.yml suppression that was silently dropped when split across two comment lines (2026-08-30)
+name: CI
+on:
+  push:
+    branches: [main]
+jobs:
+  # ci-bottlenecks: ignore[no-timeout] — deliberate: this job is bounded by
+  # the external service's own deadline, and a second explanatory comment
+  # line used to hide the directive from the parser.
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./scripts/probe.sh

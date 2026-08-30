@@ -242,16 +242,16 @@
     },
     {
       "rule": "no-timeout",
-      "cases": 15,
-      "passed": 15,
+      "cases": 16,
+      "passed": 16,
       "failed": 0,
       "tp": {
         "total": 7,
         "hit": 7
       },
       "fp": {
-        "total": 7,
-        "guarded": 7
+        "total": 8,
+        "guarded": 8
       },
       "fn": 0,
       "miss": 1,

@@ -87,12 +87,16 @@ function parseSuppressionComment(text: string): string[] | "all" | null {
 }
 
 function findSuppressionAbove(sourceLines: string[], lineNum: number): string[] | "all" | null {
+  // Scan the whole contiguous comment block above the node, not just the
+  // nearest line: a directive naturally lives at the top of a multi-line
+  // explanatory comment, and returning early on the first comment line
+  // silently dropped it (found the hard way on a two-line comment).
   for (let i = lineNum - 2; i >= 0; i--) {
     const prev = sourceLines[i]!;
     if (prev.trim() === "") continue;
-    // Only match pure comment lines for "line above" suppression
-    if (prev.trim().startsWith("#")) return parseSuppressionComment(prev);
-    break;
+    if (!prev.trim().startsWith("#")) break;
+    const sup = parseSuppressionComment(prev);
+    if (sup) return sup;
   }
   return null;
 }
