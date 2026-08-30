@@ -54,15 +54,49 @@ jobs:
 
   it("job-level suppression works", () => {
     const yaml = `name: T
-on: push
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci
+  cancel-in-progress: true
 jobs:
   build: # ci-bottlenecks: ignore[no-timeout]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+  other:
     runs-on: ubuntu-latest
     steps:
       - run: echo hi
 `;
     const wf = parseWorkflow("test.yml", yaml);
     const f = runRules(allRules, [wf!], { audit: false, pedantic: false });
-    expect(f.some((finding) => finding.rule === "no-timeout")).toBe(false);
+    const timeouts = f.filter((finding) => finding.rule === "no-timeout");
+    expect(timeouts.some((t) => t.job === "build")).toBe(false);
+    expect(timeouts.some((t) => t.job === "other")).toBe(true);
+  });
+
+  it("step-level suppression works", () => {
+    const yaml = `name: T
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@main # ci-bottlenecks: ignore[unpinned-action]
+      - uses: some/action@main
+`;
+    const wf = parseWorkflow("test.yml", yaml);
+    const f = runRules(allRules, [wf!], { audit: false, pedantic: false });
+    const unpinned = f.filter((finding) => finding.rule === "unpinned-action");
+    expect(unpinned).toHaveLength(1);
+    expect(unpinned[0]!.step).toBe(1);
   });
 });

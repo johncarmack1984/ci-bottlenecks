@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { parseWorkflow } from "../src/parser.ts";
 import { runRules } from "../src/runner.ts";
 import { allRules } from "../src/rules/index.ts";
-import type { Finding, WorkflowAuditData, RunData, JobData } from "../src/types.ts";
+import type { Finding, WorkflowAuditData, RunData, JobData, StepData } from "../src/types.ts";
 
 function makeRun(overrides: Partial<RunData> & { jobs?: JobData[] }): RunData {
   return {
@@ -191,6 +191,143 @@ jobs:
     const findings = checkAudit(yaml, { runs });
     const qd = findings.filter((f) => f.rule === "queue-dominated");
     expect(qd.length).toBe(1);
+  });
+});
+
+describe("setup-dominated", () => {
+  it("flags when setup steps exceed 50% of job time", () => {
+    const base = new Date("2024-01-01T00:00:00Z").getTime();
+    const makeSteps = (): StepData[] => [
+      {
+        name: "Set up job",
+        number: 1,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base).toISOString(),
+        completedAt: new Date(base + 60_000).toISOString(),
+      },
+      {
+        name: "Checkout",
+        number: 2,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base + 60_000).toISOString(),
+        completedAt: new Date(base + 120_000).toISOString(),
+      },
+      {
+        name: "Setup Node",
+        number: 3,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base + 120_000).toISOString(),
+        completedAt: new Date(base + 210_000).toISOString(),
+      },
+      {
+        name: "Run tests",
+        number: 4,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base + 210_000).toISOString(),
+        completedAt: new Date(base + 300_000).toISOString(),
+      },
+    ];
+
+    const runs: RunData[] = Array.from({ length: 3 }, (_, i) =>
+      makeRun({
+        id: i + 1,
+        headSha: `sha${i}`,
+        jobs: [
+          {
+            id: i + 100,
+            name: "build",
+            conclusion: "success",
+            startedAt: new Date(base).toISOString(),
+            completedAt: new Date(base + 300_000).toISOString(),
+            steps: makeSteps(),
+          },
+        ],
+      }),
+    );
+
+    const yaml = `
+name: CI
+on: push
+concurrency:
+  group: ci
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm test
+`;
+
+    const findings = checkAudit(yaml, { runs });
+    const sd = findings.filter((f) => f.rule === "setup-dominated");
+    expect(sd.length).toBe(1);
+    expect(sd[0]!.message).toContain("build");
+    expect(sd[0]!.message).toContain("%");
+  });
+
+  it("does not flag when setup is under 50%", () => {
+    const base = new Date("2024-01-01T00:00:00Z").getTime();
+    const makeSteps = (): StepData[] => [
+      {
+        name: "Set up job",
+        number: 1,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base).toISOString(),
+        completedAt: new Date(base + 10_000).toISOString(),
+      },
+      {
+        name: "Run tests",
+        number: 4,
+        status: "completed",
+        conclusion: "success",
+        startedAt: new Date(base + 10_000).toISOString(),
+        completedAt: new Date(base + 300_000).toISOString(),
+      },
+    ];
+
+    const runs: RunData[] = Array.from({ length: 3 }, (_, i) =>
+      makeRun({
+        id: i + 1,
+        headSha: `sha${i}`,
+        jobs: [
+          {
+            id: i + 100,
+            name: "build",
+            conclusion: "success",
+            startedAt: new Date(base).toISOString(),
+            completedAt: new Date(base + 300_000).toISOString(),
+            steps: makeSteps(),
+          },
+        ],
+      }),
+    );
+
+    const yaml = `
+name: CI
+on: push
+concurrency:
+  group: ci
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+`;
+
+    const findings = checkAudit(yaml, { runs });
+    const sd = findings.filter((f) => f.rule === "setup-dominated");
+    expect(sd.length).toBe(0);
   });
 });
 

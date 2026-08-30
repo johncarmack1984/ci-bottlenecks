@@ -60,6 +60,10 @@ jobs:
     expect(parseWorkflow("bad.yml", "just a string")).toBeNull();
   });
 
+  it("returns null for malformed YAML syntax", () => {
+    expect(parseWorkflow("bad.yml", "name: \"unterminated\n  [invalid: yaml\n")).toBeNull();
+  });
+
   it("extracts job properties", () => {
     const yaml = `
 name: T
@@ -181,6 +185,49 @@ jobs:
 `;
     const wf = parseWorkflow("t.yml", yaml);
     expect(wf!.suppressions.workflow).toEqual(["no-timeout"]);
+  });
+
+  it("parses job-level suppression comment", () => {
+    const yaml = `name: T
+on: push
+jobs:
+  build: # ci-bottlenecks: ignore[no-timeout]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+`;
+    const wf = parseWorkflow("t.yml", yaml);
+    expect(wf!.suppressions.jobs.get("build")).toEqual(["no-timeout"]);
+  });
+
+  it("parses step-level suppression comment", () => {
+    const yaml = `name: T
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main # ci-bottlenecks: ignore[unpinned-action]
+      - run: echo hi
+`;
+    const wf = parseWorkflow("t.yml", yaml);
+    expect(wf!.suppressions.steps.get("build:0")).toEqual(["unpinned-action"]);
+    expect(wf!.suppressions.steps.has("build:1")).toBe(false);
+  });
+
+  it("extracts step line numbers", () => {
+    const yaml = `name: T
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo first
+      - run: echo second
+`;
+    const wf = parseWorkflow("t.yml", yaml);
+    expect(wf!.jobs.get("build")!.steps[0]!.line).toBe(7);
+    expect(wf!.jobs.get("build")!.steps[1]!.line).toBe(8);
   });
 });
 
