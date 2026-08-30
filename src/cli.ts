@@ -11,7 +11,7 @@ import { detectNwo } from "./api.ts";
 import { discoverWorkflows, loadAuditData } from "./shared.ts";
 import type { Finding, Severity, ParsedWorkflow, WorkflowAuditData } from "./types.ts";
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
 const VALID_SEVERITIES = new Set(["high", "medium", "low", "info", "none"]);
@@ -26,7 +26,7 @@ Usage: ci-bottlenecks [path] [options]
 Options:
   --audit              Enable audit tier (pulls measured data from GitHub API)
   --pedantic           Enable pedantic rules
-  --runs N             Maximum number of completed runs to sample for audit (default: 50)
+  --runs N             Maximum completed runs to sample per workflow for audit (default: 25)
   --format FORMAT      Output format: text, json, sarif, summary (repeatable, default: text)
   --fail-on SEVERITY   Minimum severity to fail: high, medium, low, info, none (default: none)
   --repo OWNER/NAME    Override repository detection for audit mode
@@ -46,7 +46,7 @@ function parseArgs(argv: string[]) {
   const args = {
     audit: false,
     pedantic: false,
-    runs: 50,
+    runs: 25,
     formats: [] as string[],
     failOn: "none" as Severity | "none",
     path: ".",

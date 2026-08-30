@@ -65,6 +65,46 @@ function mapRun(r: Record<string, unknown>): RunData {
   };
 }
 
+export interface WorkflowInfo {
+  id: number;
+  path: string;
+  name: string;
+}
+
+export async function fetchWorkflows(nwo: string): Promise<WorkflowInfo[]> {
+  const results: WorkflowInfo[] = [];
+  let page = 1;
+  while (true) {
+    const data = await apiGet(
+      `/repos/${nwo}/actions/workflows?per_page=100&page=${page}`,
+    );
+    if (!data || typeof data !== "object") break;
+    const workflows = (data as Record<string, unknown>).workflows;
+    if (!Array.isArray(workflows) || workflows.length === 0) break;
+    for (const w of workflows) {
+      const wf = w as Record<string, unknown>;
+      results.push({
+        id: wf.id as number,
+        path: wf.path as string,
+        name: wf.name as string,
+      });
+    }
+    if (workflows.length < 100) break;
+    page++;
+  }
+  return results;
+}
+
+export async function fetchRunsForWorkflow(nwo: string, workflowId: number, count: number): Promise<RunData[]> {
+  const data = await apiGet(
+    `/repos/${nwo}/actions/workflows/${workflowId}/runs?per_page=${count}&status=completed`,
+  );
+  if (!data || typeof data !== "object") return [];
+  const runs = (data as Record<string, unknown>).workflow_runs;
+  if (!Array.isArray(runs)) return [];
+  return runs.map((r) => mapRun(r as Record<string, unknown>));
+}
+
 export async function fetchRuns(nwo: string, count: number): Promise<RunData[]> {
   const data = await apiGet(
     `/repos/${nwo}/actions/runs?per_page=${count}&status=completed`,

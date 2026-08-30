@@ -14,7 +14,7 @@ async function run() {
   const basePath = getInput("path") || ".";
   const audit = getBooleanInput("audit");
   const pedantic = getBooleanInput("pedantic");
-  const maxRuns = parseInt(getInput("runs") || "50", 10);
+  const maxRuns = parseInt(getInput("runs") || "25", 10);
   const failOn = (getInput("fail-on") || "none") as Severity | "none";
   const formats = (getInput("format") || "text,summary,sarif")
     .split(",")

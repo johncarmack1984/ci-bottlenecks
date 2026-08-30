@@ -46,7 +46,7 @@ ci-bottlenecks [path] [options]
 |------|-------------|---------|
 | `--audit` | Enable audit tier (pulls measured data from GitHub API) | off |
 | `--pedantic` | Enable pedantic rules | off |
-| `--runs N` | Maximum number of completed runs to sample for audit | 50 |
+| `--runs N` | Maximum completed runs to sample per workflow for audit | 25 |
 | `--format text\|json\|sarif\|summary` | Output format (repeatable) | text |
 | `--fail-on high\|medium\|low\|info\|none` | Minimum severity to fail the check | none |
 | `--repo owner/name` | Override repository detection for audit mode | - |
@@ -138,7 +138,7 @@ name: Release
 |-------|-------------|---------|
 | `path` | Path to the repository root | `.` |
 | `audit` | Enable audit tier (pulls measured data from GitHub API) | `false` |
-| `runs` | Maximum number of completed runs to sample for audit | `50` |
+| `runs` | Maximum completed runs to sample per workflow for audit | `25` |
 | `pedantic` | Enable pedantic rules | `false` |
 | `fail-on` | Minimum severity to fail the check (`high`, `medium`, `low`, `info`, `none`) | `none` |
 | `format` | Output formats (comma-separated: `text`, `json`, `sarif`, `summary`) | `text,summary,sarif` |

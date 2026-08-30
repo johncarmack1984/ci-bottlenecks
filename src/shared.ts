@@ -1,6 +1,6 @@
 import { readdirSync, existsSync } from "fs";
 import { join } from "path";
-import { fetchRuns, fetchJobsForRun } from "./api.ts";
+import { fetchWorkflows, fetchRunsForWorkflow, fetchJobsForRun } from "./api.ts";
 import { cachedFetch, DEFAULT_CACHE_DIR } from "./cache.ts";
 import type { ParsedWorkflow, WorkflowAuditData, RunData } from "./types.ts";
 
@@ -24,40 +24,48 @@ export async function loadAuditData(
 ): Promise<Map<string, WorkflowAuditData>> {
   const cacheDir = DEFAULT_CACHE_DIR;
   const map = new Map<string, WorkflowAuditData>();
+  const nwoSlug = nwo.replace("/", "_");
 
-  const runs = await cachedFetch(
+  const apiWorkflows = await cachedFetch(
     cacheDir,
-    `${nwo.replace("/", "_")}/runs`,
+    `${nwoSlug}/workflows`,
     60 * 60 * 1000,
-    () => fetchRuns(nwo, maxRuns),
+    () => fetchWorkflows(nwo),
   );
 
-  if (runs.length === 0) {
-    log?.("No completed runs found for this repository.");
+  if (apiWorkflows.length === 0) {
+    log?.("No workflows found via API.");
     return map;
   }
 
-  log?.(`Fetched ${runs.length} runs, loading job data...`);
-
-  const enrichedRuns: RunData[] = [];
-  for (const run of runs.slice(0, maxRuns)) {
-    const jobs = await cachedFetch(
-      cacheDir,
-      `${nwo.replace("/", "_")}/jobs/${run.id}`,
-      0,
-      () => fetchJobsForRun(nwo, run.id),
-    );
-    enrichedRuns.push({ ...run, jobs });
-  }
-
   for (const wf of workflows) {
-    const wfRuns = enrichedRuns.filter((r) => {
-      const wfFileName = wf.path.split("/").pop()?.replace(/\.ya?ml$/, "");
-      return r.name === wf.name || r.name === wfFileName;
-    });
-    if (wfRuns.length > 0) {
-      map.set(wf.path, { runs: wfRuns });
+    const apiWf = apiWorkflows.find((aw) => aw.path === wf.path);
+    if (!apiWf) continue;
+
+    const pathSlug = wf.path.replace(/[/\\]/g, "_").replace(/\.ya?ml$/, "");
+    const runs = await cachedFetch(
+      cacheDir,
+      `${nwoSlug}/workflow_runs/${pathSlug}_${maxRuns}`,
+      60 * 60 * 1000,
+      () => fetchRunsForWorkflow(nwo, apiWf.id, maxRuns),
+    );
+
+    if (runs.length === 0) continue;
+
+    log?.(`${wf.path}: ${runs.length} runs, loading job data...`);
+
+    const enrichedRuns: RunData[] = [];
+    for (const run of runs) {
+      const jobs = await cachedFetch(
+        cacheDir,
+        `${nwoSlug}/jobs/${run.id}`,
+        0,
+        () => fetchJobsForRun(nwo, run.id),
+      );
+      enrichedRuns.push({ ...run, jobs });
     }
+
+    map.set(wf.path, { runs: enrichedRuns });
   }
 
   return map;
