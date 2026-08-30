@@ -6946,7 +6946,7 @@ var require_public_api = __commonJS(function(exports) {
 
 // src/cli.ts
 import { readFileSync as readFileSync2, writeFileSync as writeFileSync2, mkdirSync as mkdirSync2 } from "fs";
-import { join as join2, relative } from "path";
+import { join as join2, relative, resolve } from "path";
 
 // node_modules/yaml/dist/index.js
 var composer = require_composer();
@@ -7283,6 +7283,35 @@ function parseActionRef(uses) {
   return { key, version, isLocal: false };
 }
 
+// src/utils.ts
+function durationMs(start, end) {
+  if (!start || !end)
+    return null;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return ms > 0 ? ms : null;
+}
+function median(values) {
+  if (values.length === 0)
+    return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+function percentile(sorted, p) {
+  if (sorted.length === 0)
+    return 0;
+  const idx = p / 100 * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi)
+    return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+function fmtMinutes(ms) {
+  const m = ms / 60000;
+  return m < 1 ? `${(ms / 1000).toFixed(0)}s` : `${m.toFixed(1)}m`;
+}
+
 // src/runner.ts
 function isSuppressed(finding, workflow) {
   const sup = workflow.suppressions;
@@ -7306,6 +7335,71 @@ function isSuppressed(finding, workflow) {
       return true;
   }
   return false;
+}
+function getInstallStepMedians(auditData, jobId, workflow) {
+  const job = workflow.jobs.get(jobId);
+  if (!job)
+    return new Map;
+  const jobName = job.name ?? jobId;
+  const stepDurations = new Map;
+  for (const run of auditData.runs) {
+    for (const j of run.jobs) {
+      if (j.name !== jobName && !j.name.startsWith(`${jobName} (`))
+        continue;
+      for (const step of j.steps) {
+        if (/\b(install|npm ci)\b/i.test(step.name)) {
+          const d = durationMs(step.startedAt, step.completedAt);
+          if (d != null) {
+            const arr = stepDurations.get(step.name) ?? [];
+            arr.push(d);
+            stepDurations.set(step.name, arr);
+          }
+        }
+      }
+    }
+  }
+  const result = new Map;
+  for (const [name, durations] of stepDurations) {
+    result.set(name, median(durations));
+  }
+  return result;
+}
+function crossTierGate(findings, workflows, auditDataByWorkflow) {
+  if (!auditDataByWorkflow || auditDataByWorkflow.size === 0)
+    return findings;
+  const result = [];
+  const setupDominatedJobs = new Set;
+  for (const f of findings) {
+    if (f.rule === "setup-dominated" && f.job) {
+      setupDominatedJobs.add(`${f.workflow}:${f.job}`);
+    }
+  }
+  for (const f of findings) {
+    if (f.rule === "install-no-cache" && f.job) {
+      const key = `${f.workflow}:${f.job}`;
+      if (setupDominatedJobs.has(key))
+        continue;
+      const wf = workflows.find((w) => w.path === f.workflow);
+      if (wf) {
+        const auditData = auditDataByWorkflow.get(f.workflow);
+        if (auditData) {
+          const stepMedians = getInstallStepMedians(auditData, f.job, wf);
+          const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5000);
+          if (allUnder5s) {
+            const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
+            result.push({
+              ...f,
+              severity: "info",
+              evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
+            });
+            continue;
+          }
+        }
+      }
+    }
+    result.push(f);
+  }
+  return result;
 }
 function runRules(rules, workflows, options) {
   const findings = [];
@@ -7338,7 +7432,7 @@ function runRules(rules, workflows, options) {
       }
     }
   }
-  return findings;
+  return crossTierGate(findings, workflows, options.auditDataByWorkflow);
 }
 
 // src/rules/no-timeout.ts
@@ -8684,35 +8778,6 @@ function topoSort(nodes) {
   return result;
 }
 
-// src/utils.ts
-function durationMs(start, end) {
-  if (!start || !end)
-    return null;
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  return ms > 0 ? ms : null;
-}
-function median(values) {
-  if (values.length === 0)
-    return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-function percentile(sorted, p) {
-  if (sorted.length === 0)
-    return 0;
-  const idx = p / 100 * (sorted.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi)
-    return sorted[lo];
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
-function fmtMinutes(ms) {
-  const m = ms / 60000;
-  return m < 1 ? `${(ms / 1000).toFixed(0)}s` : `${m.toFixed(1)}m`;
-}
-
 // src/rules/critical-path.ts
 function matchJobDurations(jobName, jobDurations) {
   if (jobDurations.has(jobName))
@@ -8745,6 +8810,10 @@ var criticalPath = {
     const { workflow, auditData } = ctx;
     if (!auditData || auditData.runs.length === 0)
       return [];
+    if (auditData.runs.length < 3)
+      return [];
+    if (workflow.jobs.size <= 1)
+      return [];
     const jobDurations = new Map;
     for (const run of auditData.runs) {
       for (const job of run.jobs) {
@@ -8757,12 +8826,17 @@ var criticalPath = {
       }
     }
     const nodes = [];
+    const unmatchedJobs = [];
     for (const [jobId, job] of workflow.jobs) {
       const label = job.name ?? jobId;
       const durations = matchJobDurations(label, jobDurations);
+      const dur = median(durations);
+      if (durations.length === 0) {
+        unmatchedJobs.push(label);
+      }
       nodes.push({
         jobId,
-        duration: median(durations),
+        duration: dur,
         needs: job.needs
       });
     }
@@ -8773,37 +8847,86 @@ var criticalPath = {
       return [];
     if (result.totalDuration <= 0)
       return [];
-    const longestJob = result.path.reduce((best, id) => {
+    if (result.totalDuration < 60000)
+      return [];
+    const unmatchedOnPath = result.path.filter((id) => {
+      const node = nodes.find((n) => n.jobId === id);
+      if (!node)
+        return false;
+      const label = workflow.jobs.get(id)?.name ?? id;
+      return matchJobDurations(label, jobDurations).length === 0;
+    });
+    const matchedPathDuration = result.path.reduce((sum, id) => {
+      if (unmatchedOnPath.includes(id))
+        return sum;
+      const node = nodes.find((n) => n.jobId === id);
+      return sum + (node?.duration ?? 0);
+    }, 0);
+    const longestJob = result.path.filter((id) => !unmatchedOnPath.includes(id)).reduce((best, id) => {
       const node = nodes.find((n) => n.jobId === id);
       const bestNode = nodes.find((n) => n.jobId === best);
       return (node?.duration ?? 0) > (bestNode?.duration ?? 0) ? id : best;
-    });
+    }, result.path[0]);
     const longestDuration = nodes.find((n) => n.jobId === longestJob)?.duration ?? 0;
-    const severity = result.totalDuration > longestDuration * 2 ? "medium" : "info";
+    let severity = "info";
+    if (matchedPathDuration > 30 * 60000)
+      severity = "medium";
+    if (longestDuration > 0 && matchedPathDuration > longestDuration * 2)
+      severity = "medium";
     const pathStr = result.path.map((id) => {
+      if (unmatchedOnPath.includes(id)) {
+        return `${id} (unmatched)`;
+      }
       const node = nodes.find((n) => n.jobId === id);
       return `${id} (${fmtMinutes(node?.duration ?? 0)})`;
     }).join(" -> ");
     const offPathSlack = [...result.slack.entries()].filter(([id, s]) => !result.path.includes(id) && s > 0).map(([id, s]) => `${id}: ${fmtMinutes(s)} slack`).join(", ");
+    let evidence = `Measured over ${auditData.runs.length} runs. Critical path: ${fmtMinutes(matchedPathDuration)}`;
+    if (unmatchedOnPath.length > 0) {
+      evidence += `. Unmatched: ${unmatchedOnPath.map((id) => {
+        const label = workflow.jobs.get(id)?.name ?? id;
+        return `${label} (skipped in all sampled runs?)`;
+      }).join(", ")}`;
+    }
+    if (offPathSlack) {
+      evidence += `. Off-path slack: ${offPathSlack}`;
+    }
     const findings = [
       {
         rule: "critical-path",
         severity,
         tier: "audit",
         workflow: workflow.path,
-        message: `Critical path is ${fmtMinutes(result.totalDuration)}: ${pathStr}. Longest job on path: "${longestJob}" (${fmtMinutes(longestDuration)})`,
-        evidence: `Measured over ${auditData.runs.length} runs. Critical path: ${fmtMinutes(result.totalDuration)}`,
-        remediation: `Optimize "${longestJob}" or break it into parallel jobs to shorten the critical path.`
+        message: `${fmtMinutes(matchedPathDuration)} critical path: ${pathStr}`,
+        evidence,
+        remediation: `Optimize "${longestJob}" or break it into parallel jobs to shorten the critical path.`,
+        estimatedSavings: { minutesPerRun: Math.round(matchedPathDuration / 60000 * 10) / 10, confidence: "estimate" }
       }
     ];
-    if (offPathSlack) {
-      findings[0].evidence += `. Off-path slack: ${offPathSlack}`;
-    }
     return findings;
   }
 };
 
 // src/rules/flaky-or-hanging.ts
+function matchJobId(jobName, workflow) {
+  for (const [jobId, job] of workflow.jobs) {
+    const label = job.name ?? jobId;
+    if (label === jobName)
+      return jobId;
+    if (jobName.startsWith(`${label} (`))
+      return jobId;
+  }
+  return;
+}
+function extractLegName(jobName, workflow) {
+  for (const [jobId, job] of workflow.jobs) {
+    const label = job.name ?? jobId;
+    if (jobName.startsWith(`${label} (`)) {
+      return jobName.slice(label.length + 2, -1);
+    }
+  }
+  return;
+}
 var flakyOrHanging = {
   id: "flaky-or-hanging",
   tier: "audit",
@@ -8817,9 +8940,11 @@ var flakyOrHanging = {
     const jobDurations = new Map;
     const jobTimedOut = new Map;
     const jobCancelledReal = new Map;
+    const jobSampleCount = new Map;
     for (const run of auditData.runs) {
       const runCancelled = run.conclusion === "cancelled";
       for (const job of run.jobs) {
+        jobSampleCount.set(job.name, (jobSampleCount.get(job.name) ?? 0) + 1);
         if (job.conclusion === "timed_out") {
           jobTimedOut.set(job.name, (jobTimedOut.get(job.name) ?? 0) + 1);
         }
@@ -8836,10 +8961,6 @@ var flakyOrHanging = {
         jobDurations.set(job.name, arr);
       }
     }
-    const jobIdByName = new Map;
-    for (const [jobId, job] of workflow.jobs) {
-      jobIdByName.set(job.name ?? jobId, jobId);
-    }
     for (const [jobName, durations] of jobDurations) {
       if (durations.length < 5)
         continue;
@@ -8848,15 +8969,20 @@ var flakyOrHanging = {
       const p95 = percentile(sorted, 95);
       if (med > 0 && p95 >= med * 3) {
         const ratio = (p95 / med).toFixed(1);
-        const jobId = jobIdByName.get(jobName);
+        const jobId = matchJobId(jobName, workflow);
+        const legName = extractLegName(jobName, workflow);
+        let msg = `Job "${jobName}" has high duration variance: p95 is ${ratio}x the median`;
+        if (legName)
+          msg += ` (leg: ${legName})`;
+        const sortedStr = sorted.map((d) => fmtMinutes(d)).join(", ");
         findings.push({
           rule: "flaky-or-hanging",
           severity: "high",
           tier: "audit",
           workflow: workflow.path,
           job: jobId,
-          message: `Job "${jobName}" has high duration variance: p95 is ${ratio}x the median`,
-          evidence: `p95=${fmtMinutes(p95)}, median=${fmtMinutes(med)} (ratio ${ratio}x) over ${durations.length} samples`,
+          message: msg,
+          evidence: `p95=${fmtMinutes(p95)}, median=${fmtMinutes(med)} (ratio ${ratio}x) over ${durations.length} samples. Sorted durations: [${sortedStr}]`,
           remediation: `Add timeout-minutes near ${fmtMinutes(p95)} and investigate the root cause of variance.`
         });
       }
@@ -8865,29 +8991,42 @@ var flakyOrHanging = {
     for (const [jobName, count] of jobTimedOut) {
       if (count / totalRuns < 0.1)
         continue;
-      const jobId = jobIdByName.get(jobName);
+      const jobId = matchJobId(jobName, workflow);
+      const legName = extractLegName(jobName, workflow);
+      let msg = `Job "${jobName}" timed out in ${count} of ${totalRuns} run(s)`;
+      if (legName)
+        msg += ` (leg: ${legName})`;
       findings.push({
         rule: "flaky-or-hanging",
         severity: "high",
         tier: "audit",
         workflow: workflow.path,
         job: jobId,
-        message: `Job "${jobName}" timed out in ${count} of ${totalRuns} run(s)`,
+        message: msg,
         evidence: `${count} timed_out runs out of ${totalRuns} sampled`,
         remediation: "Investigate why the job is timing out."
       });
     }
     for (const [jobName, count] of jobCancelledReal) {
-      if (count / totalRuns < 0.1)
+      const samples = jobSampleCount.get(jobName) ?? 0;
+      if (samples < 5)
         continue;
-      const jobId = jobIdByName.get(jobName);
+      if (count < 2)
+        continue;
+      if (count / totalRuns < 0.2)
+        continue;
+      const jobId = matchJobId(jobName, workflow);
+      const legName = extractLegName(jobName, workflow);
+      let msg = `Job "${jobName}" was cancelled in ${count} of ${totalRuns} run(s) (excluding cancel-in-progress)`;
+      if (legName)
+        msg += ` (leg: ${legName})`;
       findings.push({
         rule: "flaky-or-hanging",
         severity: "high",
         tier: "audit",
         workflow: workflow.path,
         job: jobId,
-        message: `Job "${jobName}" was cancelled in ${count} of ${totalRuns} run(s) (excluding cancel-in-progress)`,
+        message: msg,
         evidence: `${count} cancelled runs (not from cancel-in-progress) out of ${totalRuns} sampled`,
         remediation: "Investigate why the job is being cancelled."
       });
@@ -8906,6 +9045,71 @@ var queueDominated = {
     const { workflow, auditData } = ctx;
     if (!auditData || auditData.runs.length === 0)
       return [];
+    const findings = [];
+    const jobQueueTimes = new Map;
+    const jobRunTimes = new Map;
+    const jobLabels = new Map;
+    let hasJobCreatedAt = false;
+    for (const run of auditData.runs) {
+      for (const job of run.jobs) {
+        if (!job.startedAt || !job.completedAt)
+          continue;
+        if (job.conclusion === "skipped")
+          continue;
+        const started = new Date(job.startedAt).getTime();
+        const completed = new Date(job.completedAt).getTime();
+        const runTime = completed - started;
+        if (runTime <= 0)
+          continue;
+        let queueTime = null;
+        if (job.createdAt) {
+          hasJobCreatedAt = true;
+          const created = new Date(job.createdAt).getTime();
+          queueTime = started - created;
+        }
+        if (queueTime != null && queueTime > 0) {
+          const qt = jobQueueTimes.get(job.name) ?? [];
+          qt.push(queueTime);
+          jobQueueTimes.set(job.name, qt);
+        }
+        const rt = jobRunTimes.get(job.name) ?? [];
+        rt.push(runTime);
+        jobRunTimes.set(job.name, rt);
+        if (job.runnerLabel && !jobLabels.has(job.name)) {
+          jobLabels.set(job.name, job.runnerLabel);
+        }
+      }
+    }
+    if (hasJobCreatedAt) {
+      for (const [jobName, queueTimes2] of jobQueueTimes) {
+        if (queueTimes2.length < 5)
+          continue;
+        const medQueue2 = median(queueTimes2);
+        if (medQueue2 < 60000)
+          continue;
+        const runTimes2 = jobRunTimes.get(jobName) ?? [];
+        const medRun2 = median(runTimes2);
+        if (medRun2 <= 0)
+          continue;
+        const pct2 = (medQueue2 / medRun2 * 100).toFixed(0);
+        const label = jobLabels.get(jobName);
+        const labelStr = label ? ` (runner: ${label})` : "";
+        const jobId = matchJobId2(jobName, workflow);
+        findings.push({
+          rule: "queue-dominated",
+          severity: "medium",
+          tier: "audit",
+          workflow: workflow.path,
+          job: jobId,
+          message: `Job "${jobName}"${labelStr} spends more time queued than running: median queue ${fmtMinutes(medQueue2)} vs median run ${fmtMinutes(medRun2)} (${pct2}%)`,
+          evidence: `median queue ${fmtMinutes(medQueue2)} vs median run ${fmtMinutes(medRun2)} (${pct2}%) over ${queueTimes2.length} samples`,
+          remediation: "Check runner label availability, self-hosted capacity, and concurrency limits.",
+          estimatedSavings: { minutesPerRun: Math.round(medQueue2 / 60000 * 10) / 10, confidence: "estimate" }
+        });
+      }
+      if (findings.length > 0)
+        return findings;
+    }
     const queueTimes = [];
     const runTimes = [];
     for (const run of auditData.runs) {
@@ -8927,10 +9131,12 @@ var queueDominated = {
       if (rt > 0)
         runTimes.push(rt);
     }
-    if (queueTimes.length === 0 || runTimes.length === 0)
+    if (queueTimes.length < 5 || runTimes.length === 0)
       return [];
     const medQueue = median(queueTimes);
     const medRun = median(runTimes);
+    if (medQueue < 60000)
+      return [];
     if (medRun <= 0 || medQueue < medRun * 0.5)
       return [];
     const pct = (medQueue / medRun * 100).toFixed(0);
@@ -8942,16 +9148,40 @@ var queueDominated = {
         workflow: workflow.path,
         message: `Runs spend more time queued than running: median queue ${fmtMinutes(medQueue)} vs median run ${fmtMinutes(medRun)} (${pct}%)`,
         evidence: `median queue ${fmtMinutes(medQueue)} vs median run ${fmtMinutes(medRun)} (${pct}%) over ${queueTimes.length} runs`,
-        remediation: "Check runner label availability, self-hosted capacity, and concurrency limits."
+        remediation: "Check runner label availability, self-hosted capacity, and concurrency limits.",
+        estimatedSavings: { minutesPerRun: Math.round(medQueue / 60000 * 10) / 10, confidence: "estimate" }
       }
     ];
   }
 };
+function matchJobId2(jobName, workflow) {
+  for (const [jobId, job] of workflow.jobs) {
+    const label = job.name ?? jobId;
+    if (label === jobName)
+      return jobId;
+    if (jobName.startsWith(`${label} (`))
+      return jobId;
+  }
+  return;
+}
 
 // src/rules/setup-dominated.ts
-var SETUP_PATTERN = /^(Set up job|Run actions\/checkout|Post )|checkout|setup|install|cache|restore|toolchain|bootstrap/i;
-function isSetupStep(step) {
-  return SETUP_PATTERN.test(step.name);
+var WORK_PATTERN = /^(Build\b|Test\b|Run cargo\s+(build|test|clippy|fmt)|Run\s+bun\s+run|Run\s+npm\s+(run|test)|Run\s+node|Run\s+make|Run\s+just|Unused|cargo clippy|cargo test|cargo fmt)/i;
+var POST_RUN_CACHE_PATTERN = /^Post Run\b/i;
+var TOOL_INSTALL_PATTERN = /\bcargo\s+install\b|\bnpm\s+install\s+-g\b|\bpip\s+install\b/i;
+var SETUP_PATTERN = /(?:^Set up job$|^Run actions\/checkout\b|^Post\s)|(?<!\S)(?:checkout|setup|install|cache|restore|toolchain|bootstrap)(?!\S)/i;
+function isSetupStep(stepName) {
+  if (WORK_PATTERN.test(stepName))
+    return "work";
+  if (POST_RUN_CACHE_PATTERN.test(stepName))
+    return "cache-save";
+  if (TOOL_INSTALL_PATTERN.test(stepName))
+    return "tool-install";
+  if (/\binstaller-signed\b/i.test(stepName))
+    return "work";
+  if (SETUP_PATTERN.test(stepName))
+    return "setup";
+  return "work";
 }
 var setupDominated = {
   id: "setup-dominated",
@@ -8967,61 +9197,113 @@ var setupDominated = {
     for (const [jobId, job] of workflow.jobs) {
       jobIdByName.set(job.name ?? jobId, jobId);
     }
-    const jobStepDurations = new Map;
-    const jobTotalDurations = new Map;
+    const jobRunShares = new Map;
+    const jobRunSetupMs = new Map;
+    const jobRunTotalMs = new Map;
+    const jobStepMedians = new Map;
+    const jobCacheSaveMedians = new Map;
     for (const run of auditData.runs) {
       for (const job of run.jobs) {
+        if (job.conclusion === "cancelled" || job.conclusion === "skipped")
+          continue;
         let jobTotal = 0;
-        if (!jobStepDurations.has(job.name)) {
-          jobStepDurations.set(job.name, new Map);
-        }
-        const stepMap = jobStepDurations.get(job.name);
+        let setupTotal = 0;
+        const stepDurations = new Map;
+        const cacheSaveDurations = new Map;
         for (const step of job.steps) {
           const d = durationMs(step.startedAt, step.completedAt);
           if (d == null)
             continue;
           jobTotal += d;
-          const key = `${step.number}:${step.name}`;
-          const arr = stepMap.get(key) ?? [];
-          arr.push(d);
-          stepMap.set(key, arr);
+          const cls = isSetupStep(step.name);
+          if (cls === "setup" || cls === "tool-install") {
+            setupTotal += d;
+            stepDurations.set(step.name, (stepDurations.get(step.name) ?? 0) + d);
+          } else if (cls === "cache-save") {
+            cacheSaveDurations.set(step.name, d);
+          }
         }
-        if (jobTotal > 0) {
-          const arr = jobTotalDurations.get(job.name) ?? [];
-          arr.push(jobTotal);
-          jobTotalDurations.set(job.name, arr);
+        if (jobTotal <= 0)
+          continue;
+        const share = Math.min(setupTotal / jobTotal, 1);
+        const shares = jobRunShares.get(job.name) ?? [];
+        shares.push(share);
+        jobRunShares.set(job.name, shares);
+        const setups = jobRunSetupMs.get(job.name) ?? [];
+        setups.push(setupTotal);
+        jobRunSetupMs.set(job.name, setups);
+        const totals = jobRunTotalMs.get(job.name) ?? [];
+        totals.push(jobTotal);
+        jobRunTotalMs.set(job.name, totals);
+        if (!jobStepMedians.has(job.name))
+          jobStepMedians.set(job.name, new Map);
+        const sm = jobStepMedians.get(job.name);
+        for (const [name, dur] of stepDurations) {
+          const arr = sm.get(name) ?? [];
+          arr.push(dur);
+          sm.set(name, arr);
+        }
+        if (!jobCacheSaveMedians.has(job.name))
+          jobCacheSaveMedians.set(job.name, new Map);
+        const csm = jobCacheSaveMedians.get(job.name);
+        for (const [name, dur] of cacheSaveDurations) {
+          const arr = csm.get(name) ?? [];
+          arr.push(dur);
+          csm.set(name, arr);
         }
       }
     }
-    for (const [jobName, stepMap] of jobStepDurations) {
-      const totals = jobTotalDurations.get(jobName) ?? [];
-      const medTotal = median(totals);
-      if (medTotal <= 0)
+    for (const [jobName, shares] of jobRunShares) {
+      const medShare = median(shares);
+      if (medShare < 0.5)
         continue;
-      let setupTotal = 0;
-      const breakdown = [];
-      for (const [key, durations] of stepMap) {
-        const colonIdx = key.indexOf(":");
-        const stepName = key.slice(colonIdx + 1);
-        const med = median(durations);
-        if (isSetupStep({ name: stepName })) {
-          setupTotal += med;
-          breakdown.push(`${stepName}: ${fmtMinutes(med)}`);
-        }
-      }
-      if (setupTotal < medTotal * 0.5)
+      const medTotal = median(jobRunTotalMs.get(jobName) ?? []);
+      const medSetup = median(jobRunSetupMs.get(jobName) ?? []);
+      if (medTotal < 120000 && medSetup < 60000)
         continue;
-      const pct = (setupTotal / medTotal * 100).toFixed(0);
+      if (medSetup < 60000)
+        continue;
+      const pct = Math.min(Math.round(medShare * 100), 100);
       const jobId = jobIdByName.get(jobName);
+      const stepMap = jobStepMedians.get(jobName) ?? new Map;
+      const breakdown = [];
+      for (const [name, durations] of stepMap) {
+        breakdown.push({
+          name,
+          med: median(durations),
+          isToolInstall: isSetupStep(name) === "tool-install"
+        });
+      }
+      breakdown.sort((a, b) => b.med - a.med);
+      const top5 = breakdown.slice(0, 5);
+      const rest = breakdown.length - 5;
+      const evidenceParts = top5.map((s) => `${s.name}: ${fmtMinutes(s.med)}`);
+      if (rest > 0)
+        evidenceParts.push(`+${rest} more`);
+      const cacheSaveMap = jobCacheSaveMedians.get(jobName) ?? new Map;
+      const cacheSaveParts = [];
+      for (const [name, durations] of cacheSaveMap) {
+        cacheSaveParts.push(`${name}: ${fmtMinutes(median(durations))}`);
+      }
+      let evidence = `Setup breakdown: ${evidenceParts.join(", ")}. Total job median: ${fmtMinutes(medTotal)}`;
+      if (cacheSaveParts.length > 0) {
+        evidence += `. Cache save: ${cacheSaveParts.join(", ")}`;
+      }
+      const toolInstalls = breakdown.filter((s) => s.isToolInstall);
+      let remediation = "Improve caching or use a prebuilt container to reduce setup time.";
+      if (toolInstalls.length > 0) {
+        remediation = `Use a prebuilt-binary installer (taiki-e/install-action, cargo-binstall) or cache the binary for: ${toolInstalls.map((s) => s.name).join(", ")}. ${remediation}`;
+      }
       findings.push({
         rule: "setup-dominated",
         severity: "medium",
         tier: "audit",
         workflow: workflow.path,
         job: jobId,
-        message: `Job "${jobName}" spends ${pct}% of time in setup steps (${fmtMinutes(setupTotal)} of ${fmtMinutes(medTotal)})`,
-        evidence: `Setup breakdown: ${breakdown.join(", ")}. Total job median: ${fmtMinutes(medTotal)}`,
-        remediation: "Improve caching or use a prebuilt container to reduce setup time."
+        message: `Job "${jobName}" spends ${pct}% of time in setup steps (${fmtMinutes(medSetup)} of ${fmtMinutes(medTotal)})`,
+        evidence,
+        remediation,
+        estimatedSavings: { minutesPerRun: Math.round(medSetup / 60000 * 10) / 10, confidence: "estimate" }
       });
     }
     return findings;
@@ -9149,26 +9431,66 @@ function fmtLocation(f) {
     parts.push(`line ${f.location.line}`);
   return parts.join(":");
 }
-function formatText(findings) {
+function estimatedMinutes(f) {
+  return f.estimatedSavings?.minutesPerRun ?? 0;
+}
+function formatText(findings, auditDataByWorkflow) {
   if (findings.length === 0)
     return `No findings.
 `;
-  const sorted = [...findings].sort((a, b) => {
-    const wc = a.workflow.localeCompare(b.workflow);
-    if (wc !== 0)
-      return wc;
-    return SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
-  });
+  const hasAuditData = auditDataByWorkflow && auditDataByWorkflow.size > 0;
+  let sorted;
+  if (hasAuditData) {
+    sorted = [...findings].sort((a, b) => {
+      const wc = a.workflow.localeCompare(b.workflow);
+      if (wc !== 0)
+        return wc;
+      const ma = estimatedMinutes(a);
+      const mb = estimatedMinutes(b);
+      if (ma !== mb)
+        return mb - ma;
+      return SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
+    });
+  } else {
+    sorted = [...findings].sort((a, b) => {
+      const wc = a.workflow.localeCompare(b.workflow);
+      if (wc !== 0)
+        return wc;
+      const sc = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
+      if (sc !== 0)
+        return sc;
+      return a.rule.localeCompare(b.rule);
+    });
+  }
+  const lines = [];
+  if (hasAuditData) {
+    const withMinutes = sorted.filter((f) => estimatedMinutes(f) > 0);
+    if (withMinutes.length > 0) {
+      const top3 = [...withMinutes].sort((a, b) => estimatedMinutes(b) - estimatedMinutes(a)).slice(0, 3);
+      lines.push(c("\x1B[1m", "Top 3 by minutes at stake:"));
+      for (const f of top3) {
+        const mins = estimatedMinutes(f);
+        lines.push(`  ${mins.toFixed(1)}m  ${f.rule}  ${f.workflow}${f.job ? `:${f.job}` : ""}`);
+      }
+      lines.push("");
+    }
+  }
   const byWorkflow = new Map;
   for (const f of sorted) {
     const group = byWorkflow.get(f.workflow) ?? [];
     group.push(f);
     byWorkflow.set(f.workflow, group);
   }
-  const lines = [];
   for (const [workflow, group] of byWorkflow) {
+    let sampleSize;
+    if (hasAuditData) {
+      const data = auditDataByWorkflow.get(workflow);
+      if (data)
+        sampleSize = data.runs.length;
+    }
+    const headerSuffix = sampleSize != null ? ` (${sampleSize} runs sampled)` : "";
     lines.push(`
-${c("\x1B[1m", workflow)}`);
+${c("\x1B[1m", workflow)}${headerSuffix}`);
     for (const f of group) {
       lines.push(`  ${severityLabel(f.severity)}  ${f.rule}  ${fmtLocation(f)}`);
       lines.push(`    ${f.message}`);
@@ -9362,12 +9684,15 @@ function mapStep(s) {
 }
 function mapJob(j) {
   const rawSteps = j.steps ?? [];
+  const labels = j.labels;
   return {
     id: j.id,
     name: j.name,
     conclusion: j.conclusion ?? "",
-    startedAt: j.started_at ?? null,
-    completedAt: j.completed_at ?? null,
+    createdAt: j.created_at ?? j.createdAt ?? null,
+    startedAt: j.started_at ?? j.startedAt ?? null,
+    completedAt: j.completed_at ?? j.completedAt ?? null,
+    runnerLabel: labels && labels.length > 0 ? labels[0] : j.runner_label ?? j.runnerLabel ?? null,
     steps: rawSteps.map(mapStep)
   };
 }
@@ -9402,9 +9727,9 @@ async function fetchJobsForRun(nwo, runId) {
     return [];
   return jobs.map((j) => mapJob(j));
 }
-function detectNwo() {
+function detectNwo(cwd) {
   try {
-    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], cwd: cwd || undefined }).trim();
     if (!url)
       return null;
     const sshMatch = url.match(/git@[^:]+:(.+?)(?:\.git)?$/);
@@ -9486,21 +9811,58 @@ async function loadAuditData(nwo, workflows, maxRuns, log) {
 }
 
 // src/cli.ts
+var VERSION = "0.1.0";
 var VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
-var VALID_SEVERITIES = new Set(["high", "medium", "low", "info"]);
+var VALID_SEVERITIES = new Set(["high", "medium", "low", "info", "none"]);
+function printUsage() {
+  process.stdout.write(`ci-bottlenecks v${VERSION}
+
+Find performance problems in GitHub Actions pipelines.
+
+Usage: ci-bottlenecks [path] [options]
+
+Options:
+  --audit              Enable audit tier (pulls measured data from GitHub API)
+  --pedantic           Enable pedantic rules
+  --runs N             Maximum number of completed runs to sample for audit (default: 50)
+  --format FORMAT      Output format: text, json, sarif, summary (repeatable, default: text)
+  --fail-on SEVERITY   Minimum severity to fail: high, medium, low, info, none (default: none)
+  --repo OWNER/NAME    Override repository detection for audit mode
+  --record DIR         Write anonymized audit snapshots to DIR for eval fixtures
+  --sarif-output PATH  Write SARIF to a file instead of stdout
+  -h, --help           Show this help message
+  --version            Print version and exit
+
+Exit codes:
+  0  No findings at or above the --fail-on threshold (or --fail-on none)
+  1  Findings found at or above the threshold
+  2  Error (no workflows found, parse failure, etc.)
+`);
+}
 function parseArgs(argv) {
   const args = {
     audit: false,
     pedantic: false,
     runs: 50,
     formats: [],
-    failOn: "high",
+    failOn: "none",
     path: ".",
-    sarifOutput: ""
+    sarifOutput: "",
+    repo: "",
+    record: "",
+    help: false,
+    version: false
   };
   for (let i = 0;i < argv.length; i++) {
     const arg = argv[i];
     switch (arg) {
+      case "-h":
+      case "--help":
+        args.help = true;
+        break;
+      case "--version":
+        args.version = true;
+        break;
       case "--audit":
         args.audit = true;
         break;
@@ -9521,7 +9883,7 @@ function parseArgs(argv) {
         break;
       }
       case "--fail-on": {
-        const sev = argv[++i] ?? "high";
+        const sev = argv[++i] ?? "none";
         if (!VALID_SEVERITIES.has(sev)) {
           process.stderr.write(`Unknown severity: "${sev}". Valid values: ${[...VALID_SEVERITIES].join(", ")}
 `);
@@ -9532,6 +9894,12 @@ function parseArgs(argv) {
       }
       case "--sarif-output":
         args.sarifOutput = argv[++i] ?? "";
+        break;
+      case "--repo":
+        args.repo = argv[++i] ?? "";
+        break;
+      case "--record":
+        args.record = argv[++i] ?? "";
         break;
       default:
         if (!arg.startsWith("-"))
@@ -9549,11 +9917,22 @@ var SEVERITY_ORDER2 = {
   info: 3
 };
 function meetsThreshold(finding, threshold) {
+  if (threshold === "none")
+    return false;
   return SEVERITY_ORDER2[finding.severity] <= SEVERITY_ORDER2[threshold];
 }
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const basePath = args.path;
+  if (args.help) {
+    printUsage();
+    process.exit(0);
+  }
+  if (args.version) {
+    process.stdout.write(`ci-bottlenecks v${VERSION}
+`);
+    process.exit(0);
+  }
+  const basePath = resolve(args.path);
   const workflowFiles = discoverWorkflows(basePath);
   if (workflowFiles.length === 0) {
     process.stderr.write(`No workflow files found in ${join2(basePath, ".github/workflows")}
@@ -9579,9 +9958,15 @@ async function main() {
   }
   let auditDataByWorkflow;
   if (args.audit) {
-    const nwo = detectNwo();
+    let nwo = args.repo || null;
     if (!nwo) {
-      process.stderr.write(`Could not detect repository (no git remote). Skipping audit.
+      nwo = detectNwo(basePath);
+      if (!nwo && process.env.GITHUB_REPOSITORY) {
+        nwo = process.env.GITHUB_REPOSITORY;
+      }
+    }
+    if (!nwo) {
+      process.stderr.write(`Could not detect repository. Use --repo owner/name or set GITHUB_REPOSITORY.
 `);
     } else {
       process.stderr.write(`Auditing ${nwo} (${args.runs} runs max)...
@@ -9595,10 +9980,13 @@ async function main() {
     pedantic: args.pedantic,
     auditDataByWorkflow
   });
+  if (args.record && auditDataByWorkflow) {
+    writeRecordedSnapshots(args.record, workflows, auditDataByWorkflow);
+  }
   for (const fmt of args.formats) {
     switch (fmt) {
       case "text":
-        process.stdout.write(formatText(findings));
+        process.stdout.write(formatText(findings, auditDataByWorkflow));
         break;
       case "json":
         process.stdout.write(formatJson(findings));
@@ -9635,6 +10023,48 @@ async function main() {
   }
   const hasAboveThreshold = findings.some((f) => meetsThreshold(f, args.failOn));
   process.exit(hasAboveThreshold ? 1 : 0);
+}
+function writeRecordedSnapshots(dir, workflows, auditDataByWorkflow) {
+  mkdirSync2(dir, { recursive: true });
+  for (const wf of workflows) {
+    const data = auditDataByWorkflow.get(wf.path);
+    if (!data || data.runs.length === 0)
+      continue;
+    const anonymized = {
+      runs: data.runs.map((run) => ({
+        id: run.id,
+        name: run.name,
+        workflowId: run.workflowId,
+        headSha: run.headSha.replace(/./g, "a"),
+        conclusion: run.conclusion,
+        createdAt: run.createdAt,
+        runStartedAt: run.runStartedAt,
+        updatedAt: run.updatedAt,
+        jobs: run.jobs.map((job) => ({
+          id: job.id,
+          name: job.name,
+          conclusion: job.conclusion,
+          createdAt: job.createdAt,
+          startedAt: job.startedAt,
+          completedAt: job.completedAt,
+          runnerLabel: job.runnerLabel,
+          steps: job.steps.map((step) => ({
+            name: step.name,
+            number: step.number,
+            status: step.status,
+            conclusion: step.conclusion,
+            startedAt: step.startedAt,
+            completedAt: step.completedAt
+          }))
+        }))
+      }))
+    };
+    const slug = wf.path.replace(/[/\\]/g, "_").replace(/\.ya?ml$/, "");
+    writeFileSync2(join2(dir, `${slug}.timing.json`), JSON.stringify(anonymized, null, 2) + `
+`);
+    process.stderr.write(`Recorded ${slug}.timing.json (${data.runs.length} runs)
+`);
+  }
 }
 main().catch((e) => {
   process.stderr.write(`Error: ${e.message}
