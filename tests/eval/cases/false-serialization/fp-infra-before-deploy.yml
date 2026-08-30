@@ -1,0 +1,30 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: infra runs cdk deploy (infrastructure provisioning), api uses configure-aws-credentials and deploys to the provisioned infra — ordering is necessary
+# source: orrery deploy.yml api/sites needs infra pattern
+name: Deploy
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::role/deploy
+      - run: npx cdk deploy --all --require-approval never
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [infra]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::role/deploy
+      - run: aws ecs update-service --cluster prod --service api

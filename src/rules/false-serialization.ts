@@ -1,12 +1,54 @@
 import type { Rule, Finding, ParsedJob } from "../types.ts";
 import { parseActionRef } from "../parser.ts";
 
-const GATE_PATTERN = /check|gate|guard|pre_job|changes|filter|lint/i;
+const GATE_PATTERN = /check|gate|guard|pre_job|changes|filter/i;
 const GATE_ACTIONS = ["dorny/paths-filter", "fkirc/skip-duplicate-actions"];
 
-// Only fire when consumer is a pure CI job, not a deploy/publish/release job
-const CI_JOB_PATTERN = /\b(build|test|lint|check|clippy|fmt|typecheck|bench|coverage|e2e)\b/i;
-const DEPLOY_JOB_PATTERN = /\b(deploy|publish|release|upload|push|pages|tag)\b/i;
+const CI_TOKENS = new Set(["build", "test", "lint", "check", "clippy", "fmt", "typecheck", "bench", "coverage", "e2e"]);
+const DEPLOY_TOKENS = new Set(["deploy", "publish", "release", "upload", "push", "pages", "tag"]);
+
+const CI_STEP_PATTERN = /\b(build|test|lint|check|clippy|fmt|typecheck|bench|coverage|e2e)\b/i;
+
+const DEPLOY_STEP_ACTIONS = new Set([
+  "softprops/action-gh-release",
+  "ncipollo/release-action",
+  "svenstaro/upload-release-action",
+  "actions/upload-release-asset",
+  "docker/build-push-action",
+]);
+
+const DEPLOY_STEP_COMMANDS = /\b(npm\s+publish|cargo\s+publish|docker\s+push|gh\s+release\s+(upload|create|edit)|aws\s+s3\s+(sync|cp)|aws\s+cloudfront|terraform\s+apply|cdk\s+deploy|sam\s+deploy|pulumi\s+up|aws\s+cloudformation\s+deploy|wrangler\s+deploy|vercel\s+deploy|netlify\s+deploy|flyctl\s+deploy|git\s+push)\b/i;
+
+const INFRA_COMMANDS = /\b(terraform\s+apply|cdk\s+deploy|sam\s+deploy|pulumi\s+up|aws\s+cloudformation\s+deploy)\b/i;
+
+const CACHE_SAVE_ACTIONS = new Set([
+  "actions/cache",
+  "actions/cache/save",
+  "Swatinem/rust-cache",
+  "Mozilla-Actions/sccache-action",
+]);
+
+const CACHE_RESTORE_ACTIONS = new Set([
+  "actions/cache",
+  "actions/cache/restore",
+  "Swatinem/rust-cache",
+  "Mozilla-Actions/sccache-action",
+]);
+
+const CACHE_JOB_TOKENS = new Set(["deps", "dependencies", "warm", "prime", "prefetch", "vendor"]);
+
+function tokenize(label: string): string[] {
+  return label
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .split(/[_\-\s/.]+/)
+    .map((t) => t.toLowerCase())
+    .filter((t) => t.length > 0);
+}
+
+function matchesTokens(label: string, tokens: Set<string>): boolean {
+  return tokenize(label).some((t) => tokens.has(t));
+}
 
 function isGateJob(job: ParsedJob): boolean {
   if (GATE_PATTERN.test(job.id) || (job.name && GATE_PATTERN.test(job.name))) return true;
@@ -17,16 +59,60 @@ function isGateJob(job: ParsedJob): boolean {
   });
 }
 
+function hasDeploySteps(job: ParsedJob): boolean {
+  for (const step of job.steps) {
+    if (step.run && DEPLOY_STEP_COMMANDS.test(step.run)) return true;
+    if (step.uses) {
+      const { key } = parseActionRef(step.uses);
+      if (DEPLOY_STEP_ACTIONS.has(key)) return true;
+    }
+  }
+  return false;
+}
+
 function isPureCIJob(job: ParsedJob): boolean {
   const label = job.name ?? job.id;
-  if (DEPLOY_JOB_PATTERN.test(label)) return false;
+  if (matchesTokens(label, DEPLOY_TOKENS)) return false;
+  if (hasDeploySteps(job)) return false;
   if (job.environment) return false;
   if (job.if && /always\(\)/.test(job.if)) return false;
-  if (CI_JOB_PATTERN.test(job.id) || (job.name && CI_JOB_PATTERN.test(job.name))) return true;
-  // Check steps for CI-shaped commands
-  return job.steps.some((s) =>
-    s.run && CI_JOB_PATTERN.test(s.run),
-  );
+  if (matchesTokens(job.id, CI_TOKENS) || (job.name && matchesTokens(job.name, CI_TOKENS))) return true;
+  return job.steps.some((s) => s.run && CI_STEP_PATTERN.test(s.run));
+}
+
+function isInfraJob(job: ParsedJob): boolean {
+  return job.steps.some((s) => s.run && INFRA_COMMANDS.test(s.run));
+}
+
+function usesCloudTooling(job: ParsedJob): boolean {
+  return job.steps.some((s) => {
+    if (s.uses) {
+      const { key } = parseActionRef(s.uses);
+      if (key === "aws-actions/configure-aws-credentials") return true;
+    }
+    if (s.run && /\b(aws\s|terraform\s+(output|plan))\b/i.test(s.run)) return true;
+    return false;
+  });
+}
+
+function hasCacheSave(job: ParsedJob): boolean {
+  const label = job.name ?? job.id;
+  if (matchesTokens(label, CACHE_JOB_TOKENS)) return true;
+  return job.steps.some((s) => {
+    if (!s.uses) return false;
+    const { key } = parseActionRef(s.uses);
+    return CACHE_SAVE_ACTIONS.has(key);
+  });
+}
+
+function hasCacheRestore(job: ParsedJob): boolean {
+  return job.steps.some((s) => {
+    if (!s.uses) return false;
+    const { key } = parseActionRef(s.uses);
+    if (CACHE_RESTORE_ACTIONS.has(key)) return true;
+    if (/^actions\/setup-/.test(key) && s.with?.cache) return true;
+    return false;
+  });
 }
 
 function stringifyJobMinusNeeds(job: ParsedJob): string {
@@ -156,19 +242,19 @@ export const falseSerialization: Rule = {
         const jobA = ctx.workflow.jobs.get(depId);
         if (!jobA) continue;
         if (isGateJob(jobA)) continue;
-        // Reusable-workflow producers are opaque
         if (jobA.uses) continue;
 
         const bValues = stringifyJobMinusNeeds(jobB);
 
-        // Check for any needs reference: needs.X.outputs, needs.X.result, needs.*, toJSON(needs)
         if (bValues.includes(`needs.${depId}.outputs`)) continue;
         if (bValues.includes(`needs.${depId}.result`)) continue;
         if (/needs\.\*/.test(bValues)) continue;
         if (/toJSON\(needs\)/.test(bValues)) continue;
-        // Generic needs.<depId> token (e.g. in fromJSON, strategy, runs-on)
         if (new RegExp(`needs\\.${depId}\\b`).test(bValues)) continue;
         if (artifactHandoff(jobA, jobB)) continue;
+
+        if (isInfraJob(jobA) && usesCloudTooling(jobB)) continue;
+        if (hasCacheSave(jobA) && hasCacheRestore(jobB)) continue;
 
         const labelB = jobB.name ?? jobBId;
         const labelA = jobA.name ?? depId;

@@ -1,0 +1,24 @@
+# eval: rule=false-serialization expect=fire kind=tp jobs=test
+# why: test depends on lint but consumes nothing — both are pure CI jobs that could run in parallel
+# source: martin ci.yml test needs lint pattern
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo clippy --all-targets
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test

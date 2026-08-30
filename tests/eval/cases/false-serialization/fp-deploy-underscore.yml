@@ -1,7 +1,7 @@
 # eval: rule=false-serialization expect=silent kind=fp
-# why: build warms the Rust cache (Swatinem/rust-cache) so test benefits from it via shared cache — implicit data dependency
-# source: cache warmup serialization pattern (implicit shared state via actions/cache or rust-cache)
-name: CI
+# why: publish_npm is a deploy job despite underscore in name — word boundary regex fails on underscores but token matching should recognize "publish"
+# source: Word boundary bug with underscore-separated job IDs
+name: Release
 on:
   push:
     branches: [main]
@@ -14,13 +14,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-  test:
+      - run: npm run build
+  publish_npm:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test
+      - run: npm ci
+      - run: npm test
+      - run: npm publish

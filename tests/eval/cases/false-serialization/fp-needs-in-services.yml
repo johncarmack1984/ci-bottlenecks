@@ -1,0 +1,31 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer references needs.setup.outputs.db_image in services — genuine data dependency
+# source: needs reference in services placement
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      db_image: ${{ steps.img.outputs.db_image }}
+    steps:
+      - id: img
+        run: echo "db_image=postgres:16" >> $GITHUB_OUTPUT
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup]
+    services:
+      postgres:
+        image: ${{ needs.setup.outputs.db_image }}
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test

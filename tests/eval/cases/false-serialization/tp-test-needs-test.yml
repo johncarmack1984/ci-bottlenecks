@@ -1,0 +1,24 @@
+# eval: rule=false-serialization expect=fire kind=tp jobs=test_with_svc
+# why: test_with_svc depends on unit_test_svc_pg but consumes nothing — ordering-only between two test jobs
+# source: martin ci.yml test-with-svc needs unit-test-svc-pg pattern
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit_test_svc_pg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --package svc-pg
+  test_with_svc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit_test_svc_pg]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --package integration

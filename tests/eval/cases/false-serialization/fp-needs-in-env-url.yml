@@ -1,0 +1,29 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: consumer references needs.setup.outputs.url in environment.url — genuine data dependency
+# source: needs reference in environment.url placement
+name: Deploy
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      url: ${{ steps.env.outputs.url }}
+    steps:
+      - id: env
+        run: echo "url=https://staging.example.com" >> $GITHUB_OUTPUT
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup]
+    environment:
+      name: staging
+      url: ${{ needs.setup.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run deploy

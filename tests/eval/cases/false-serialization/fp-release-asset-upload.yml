@@ -1,0 +1,31 @@
+# eval: rule=false-serialization expect=silent kind=fp
+# why: build_macos uploads release assets via softprops/action-gh-release — it consumes the release created by create_release
+# source: maplibre-native core-release.yml build-macos needs create-release pattern
+name: Release
+on:
+  workflow_dispatch:
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+  build_macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    needs: [create_release]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: target/release/myapp

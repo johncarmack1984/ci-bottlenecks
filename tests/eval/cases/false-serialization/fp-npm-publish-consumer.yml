@@ -1,7 +1,7 @@
 # eval: rule=false-serialization expect=silent kind=fp
-# why: build warms the Rust cache (Swatinem/rust-cache) so test benefits from it via shared cache — implicit data dependency
-# source: cache warmup serialization pattern (implicit shared state via actions/cache or rust-cache)
-name: CI
+# why: package job runs npm publish — it is a release/deploy consumer, not pure CI
+# source: Step-level deploy detection via npm publish command
+name: Release
 on:
   push:
     branches: [main]
@@ -14,13 +14,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-  test:
+      - run: npm run build
+  package:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test
+      - run: npm ci
+      - run: npm publish
