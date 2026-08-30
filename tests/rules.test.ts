@@ -274,7 +274,7 @@ jobs:
     expect(f.length).toBe(0);
   });
 
-  it("passes bun install with setup-bun", () => {
+  it("flags bun install with setup-bun (binary cache only)", () => {
     const f = findByRule(check(`
 name: T
 on: push
@@ -284,6 +284,26 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: oven-sh/setup-bun@v2
+      - run: bun install
+`), "install-no-cache");
+    expect(f.length).toBe(1);
+  });
+
+  it("passes bun install with actions/cache for bun deps", () => {
+    const f = findByRule(check(`
+name: T
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-\${{ hashFiles('bun.lock') }}
+          restore-keys: bun-
       - run: bun install
 `), "install-no-cache");
     expect(f.length).toBe(0);
