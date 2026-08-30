@@ -1,0 +1,32 @@
+{
+  "name": "ci-bottlenecks",
+  "version": "0.1.0",
+  "description": "Find performance problems in GitHub Actions pipelines",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ci-bottlenecks": "bin/ci-bottlenecks"
+  },
+  "scripts": {
+    "build": "bun build src/action.ts --target=node --outfile dist/index.js",
+    "test": "bun test",
+    "lint": "tsc --noEmit",
+    "check": "bun run lint && bun test && bun run build"
+  },
+  "keywords": [
+    "github-actions",
+    "ci",
+    "performance",
+    "linter"
+  ],
+  "license": "MIT",
+  "author": "John Carmack",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.0",
+    "yaml": "^2.7.0"
+  }
+}
