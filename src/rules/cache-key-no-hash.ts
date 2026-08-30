@@ -1,9 +1,12 @@
 import type { Rule, Finding } from "../types.ts";
 import { parseActionRef } from "../parser.ts";
 
-function isCacheAction(uses: string): boolean {
-  // parseActionRef normalizes actions/cache/restore to key="actions/cache"
-  return parseActionRef(uses).key === "actions/cache";
+function cacheActionType(uses: string): "cache" | "restore" | "save" | null {
+  const { key } = parseActionRef(uses);
+  if (key !== "actions/cache") return null;
+  if (uses.includes("/cache/save")) return "save";
+  if (uses.includes("/cache/restore")) return "restore";
+  return "cache";
 }
 
 function hasHashOrExpression(value: string): boolean {
@@ -21,7 +24,9 @@ export const cacheKeyNoHash: Rule = {
 
     for (const [jobId, job] of ctx.workflow.jobs) {
       for (const step of job.steps) {
-        if (!step.uses || !isCacheAction(step.uses)) continue;
+        if (!step.uses) continue;
+        const actionType = cacheActionType(step.uses);
+        if (!actionType) continue;
 
         const key = step.with?.key;
         if (typeof key !== "string") continue;
@@ -43,7 +48,8 @@ export const cacheKeyNoHash: Rule = {
               "Add hashFiles() over your lockfile or dependency manifest to the cache key.",
             patch: `key: \${{ runner.os }}-cache-\${{ hashFiles('**/lockfile') }}`,
           });
-        } else if (step.with?.["restore-keys"] == null) {
+        } else if (actionType !== "save" && step.with?.["restore-keys"] == null) {
+          // restore-keys is not an input for actions/cache/save
           findings.push({
             rule: "cache-key-no-hash",
             severity: "low",

@@ -17,7 +17,7 @@ const TOOLCHAIN_MAP: Record<string, Toolchain> = {
 const BUILD_PATTERNS: Record<Toolchain, RegExp> = {
   rust: /\bcargo\s+(build|test|clippy)\b/,
   node: /\b(npm|pnpm|bun)\s+run\s+build\b|\byarn\s+build\b/,
-  python: /(?!)/, // no standard build command
+  python: /(?!)/,
   go: /(?!)/,
   java: /(?!)/,
   bun: /\bbun\s+run\s+build\b/,
@@ -30,6 +30,35 @@ interface JobProfile {
   hasCheckout: boolean;
   uploadsArtifact: boolean;
   downloadsArtifact: boolean;
+  runsOn: string;
+  toolchainRef: string;
+  cargoFlags: string;
+}
+
+function getToolchainRef(job: ParsedJob): string {
+  for (const step of job.steps) {
+    if (!step.uses) continue;
+    const { key } = parseActionRef(step.uses);
+    if (key === "dtolnay/rust-toolchain" || key === "actions-rust-lang/setup-rust-toolchain") {
+      return String(step.with?.toolchain ?? "stable");
+    }
+    if (key === "actions/setup-node") {
+      return String(step.with?.["node-version"] ?? "");
+    }
+  }
+  return "";
+}
+
+function getCargoFlags(job: ParsedJob): string {
+  const flags: string[] = [];
+  for (const step of job.steps) {
+    if (!step.run) continue;
+    const targetMatch = step.run.match(/--target\s+(\S+)/);
+    if (targetMatch) flags.push(`target:${targetMatch[1]}`);
+    const featMatch = step.run.match(/--features\s+(\S+)/);
+    if (featMatch) flags.push(`features:${featMatch[1]}`);
+  }
+  return flags.sort().join(",");
 }
 
 function profileJob(job: ParsedJob): JobProfile {
@@ -58,7 +87,19 @@ function profileJob(job: ParsedJob): JobProfile {
     }
   }
 
-  return { jobId: job.id, toolchains, builds, hasCheckout, uploadsArtifact, downloadsArtifact };
+  const runsOn = Array.isArray(job["runs-on"]) ? job["runs-on"].sort().join(",") : job["runs-on"];
+
+  return {
+    jobId: job.id,
+    toolchains,
+    builds,
+    hasCheckout,
+    uploadsArtifact,
+    downloadsArtifact,
+    runsOn,
+    toolchainRef: getToolchainRef(job),
+    cargoFlags: getCargoFlags(job),
+  };
 }
 
 export const repeatedSetup: Rule = {
@@ -73,24 +114,31 @@ export const repeatedSetup: Rule = {
       profiles.set(jobId, profileJob(job));
     }
 
-    // Group by toolchain set
-    const byToolchain = new Map<string, JobProfile[]>();
+    // Group by (toolchain, runs-on, toolchain ref, cargo flags)
+    const byGroup = new Map<string, JobProfile[]>();
     for (const profile of profiles.values()) {
       if (!profile.hasCheckout || profile.toolchains.size === 0 || !profile.builds) continue;
       if (profile.downloadsArtifact) continue;
-      const key = [...profile.toolchains].sort().join("+");
-      const group = byToolchain.get(key) ?? [];
+      const key = [
+        [...profile.toolchains].sort().join("+"),
+        profile.runsOn,
+        profile.toolchainRef,
+        profile.cargoFlags,
+      ].join("|");
+      const group = byGroup.get(key) ?? [];
       group.push(profile);
-      byToolchain.set(key, group);
+      byGroup.set(key, group);
     }
 
     const findings: Finding[] = [];
-    for (const [tc, group] of byToolchain) {
+    for (const [, group] of byGroup) {
+      // 3 jobs: two parallel jobs are normal (test + lint); three sharing a build is wasteful
       if (group.length < 3) continue;
 
       const hasAnyUpload = group.some((p) => p.uploadsArtifact);
       if (hasAnyUpload) continue;
 
+      const tc = [...group[0]!.toolchains].sort().join("+");
       const jobNames = group.map((p) => p.jobId).join(", ");
       findings.push({
         rule: "repeated-setup",

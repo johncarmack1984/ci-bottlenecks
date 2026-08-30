@@ -1,7 +1,8 @@
 import type { Rule, Finding } from "../types.ts";
 import { parseActionRef } from "../parser.ts";
 
-const RUST_CACHE_PATHS = /(?:\/\.cargo|\/target|~\/\.cargo|target\/)/;
+// Match broad .cargo dir or cargo registry/git and target dirs, but NOT standalone ~/.cargo/bin
+const RUST_CACHE_PATHS = /~\/\.cargo\b(?!\/bin\b)|\.cargo\/(registry|git)|(^|\/)target(\/|$)/;
 const SCCACHE_PATHS = /sccache/;
 
 function stepActionKey(step: { uses?: string }): string | null {

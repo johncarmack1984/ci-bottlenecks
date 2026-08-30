@@ -4,7 +4,8 @@ import { parseActionRef } from "../parser.ts";
 type Ecosystem = "node" | "python" | "rust" | "bun";
 
 const INSTALL_PATTERNS: { pattern: RegExp; ecosystem: Ecosystem }[] = [
-  { pattern: /\bnpm\s+(ci|install)\b/, ecosystem: "node" },
+  // npm install -g is a global tool install, not a dependency install
+  { pattern: /\bnpm\s+(ci|install)\b(?!\s+-g)/, ecosystem: "node" },
   { pattern: /\bpnpm\s+install\b/, ecosystem: "node" },
   { pattern: /\byarn\s+install\b/, ecosystem: "node" },
   { pattern: /\bbun\s+install\b/, ecosystem: "bun" },
@@ -15,10 +16,12 @@ const INSTALL_PATTERNS: { pattern: RegExp; ecosystem: Ecosystem }[] = [
 const NODE_CACHE_PATHS = /node_modules|\.npm|\.pnpm-store|\.yarn/;
 const PIP_CACHE_PATHS = /pip|\.cache\/pip/;
 const RUST_CACHE_PATHS = /\.cargo|target\//;
+const BUN_CACHE_PATHS = /\.bun\/install\/cache/;
 
-function stepKey(step: ParsedStep): string | null {
+function stepKey(step: ParsedStep): { key: string; isLocal: boolean } | null {
   if (!step.uses) return null;
-  return parseActionRef(step.uses).key;
+  const ref = parseActionRef(step.uses);
+  return { key: ref.key, isLocal: ref.isLocal };
 }
 
 function detectInstallEcosystems(steps: ParsedStep[]): Set<Ecosystem> {
@@ -36,25 +39,49 @@ function detectCachedEcosystems(steps: ParsedStep[]): Set<Ecosystem> {
   const cached = new Set<Ecosystem>();
 
   for (const step of steps) {
-    const key = stepKey(step);
-    if (!key) continue;
+    const ref = stepKey(step);
+    if (!ref) continue;
+
+    // Local composite actions are opaque — treat as cached for all ecosystems
+    if (ref.isLocal) {
+      cached.add("node");
+      cached.add("python");
+      cached.add("rust");
+      cached.add("bun");
+      continue;
+    }
+
+    const { key } = ref;
 
     if (key === "actions/setup-node" && step.with?.cache) cached.add("node");
     if (key === "actions/setup-python" && step.with?.cache) cached.add("python");
     if (key === "Swatinem/rust-cache") cached.add("rust");
     if (key === "mozilla-actions/sccache-action") cached.add("rust");
-
-    if (key === "oven-sh/setup-bun") {
-      const noCache = step.with?.["no-cache"];
-      if (noCache === true || noCache === "true") continue;
-      cached.add("bun");
+    if (key === "moonrepo/setup-rust") {
+      // Caches by default unless cache: false
+      const cacheOpt = step.with?.cache;
+      if (cacheOpt !== false && cacheOpt !== "false") cached.add("rust");
     }
+    if (key === "astral-sh/setup-uv") cached.add("python");
+    if (key === "pdm-project/setup-pdm") cached.add("python");
 
-    if (key === "actions/cache") {
+    // oven-sh/setup-bun only caches the bun binary, not dependencies
+    // It is NOT a dependency cache provider
+
+    if (key === "actions/cache" || key === "actions/cache/restore") {
       const paths = typeof step.with?.path === "string" ? step.with.path : "";
+      // Expression-based paths are opaque — treat as potentially caching anything
+      if (paths.includes("${{")) {
+        cached.add("node");
+        cached.add("python");
+        cached.add("rust");
+        cached.add("bun");
+        continue;
+      }
       if (NODE_CACHE_PATHS.test(paths)) cached.add("node");
       if (PIP_CACHE_PATHS.test(paths)) cached.add("python");
       if (RUST_CACHE_PATHS.test(paths)) cached.add("rust");
+      if (BUN_CACHE_PATHS.test(paths)) cached.add("bun");
     }
   }
 

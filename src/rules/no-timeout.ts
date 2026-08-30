@@ -9,6 +9,8 @@ export const noTimeout: Rule = {
   check(ctx): Finding[] {
     const findings: Finding[] = [];
     for (const [jobId, job] of ctx.workflow.jobs) {
+      // Reusable-workflow call jobs don't accept timeout-minutes
+      if (job.uses) continue;
       if (job["timeout-minutes"] != null) continue;
       const label = job.name ?? jobId;
       findings.push({
