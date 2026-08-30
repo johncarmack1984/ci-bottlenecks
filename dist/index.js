@@ -7112,9 +7112,11 @@ function findSuppressionAbove(sourceLines, lineNum) {
     const prev = sourceLines[i];
     if (prev.trim() === "")
       continue;
-    if (prev.trim().startsWith("#"))
-      return parseSuppressionComment(prev);
-    break;
+    if (!prev.trim().startsWith("#"))
+      break;
+    const sup = parseSuppressionComment(prev);
+    if (sup)
+      return sup;
   }
   return null;
 }
