@@ -5,6 +5,7 @@ import type {
   ParsedWorkflow,
   WorkflowAuditData,
 } from "./types.ts";
+import { durationMs, median } from "./utils.ts";
 
 function isSuppressed(
   finding: Finding,
@@ -41,6 +42,77 @@ export interface RunOptions {
   audit: boolean;
   pedantic: boolean;
   auditDataByWorkflow?: Map<string, WorkflowAuditData>;
+}
+
+function getInstallStepMedians(auditData: WorkflowAuditData, jobId: string, workflow: ParsedWorkflow): Map<string, number> {
+  const job = workflow.jobs.get(jobId);
+  if (!job) return new Map();
+
+  const jobName = job.name ?? jobId;
+  const stepDurations = new Map<string, number[]>();
+
+  for (const run of auditData.runs) {
+    for (const j of run.jobs) {
+      if (j.name !== jobName && !j.name.startsWith(`${jobName} (`)) continue;
+      for (const step of j.steps) {
+        if (/\b(install|npm ci)\b/i.test(step.name)) {
+          const d = durationMs(step.startedAt, step.completedAt);
+          if (d != null) {
+            const arr = stepDurations.get(step.name) ?? [];
+            arr.push(d);
+            stepDurations.set(step.name, arr);
+          }
+        }
+      }
+    }
+  }
+
+  const result = new Map<string, number>();
+  for (const [name, durations] of stepDurations) {
+    result.set(name, median(durations));
+  }
+  return result;
+}
+
+function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDataByWorkflow?: Map<string, WorkflowAuditData>): Finding[] {
+  if (!auditDataByWorkflow || auditDataByWorkflow.size === 0) return findings;
+
+  const result: Finding[] = [];
+  const setupDominatedJobs = new Set<string>();
+
+  for (const f of findings) {
+    if (f.rule === "setup-dominated" && f.job) {
+      setupDominatedJobs.add(`${f.workflow}:${f.job}`);
+    }
+  }
+
+  for (const f of findings) {
+    if (f.rule === "install-no-cache" && f.job) {
+      const key = `${f.workflow}:${f.job}`;
+      if (setupDominatedJobs.has(key)) continue;
+
+      const wf = workflows.find((w) => w.path === f.workflow);
+      if (wf) {
+        const auditData = auditDataByWorkflow.get(f.workflow);
+        if (auditData) {
+          const stepMedians = getInstallStepMedians(auditData, f.job, wf);
+          const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5_000);
+          if (allUnder5s) {
+            const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
+            result.push({
+              ...f,
+              severity: "info",
+              evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`,
+            });
+            continue;
+          }
+        }
+      }
+    }
+    result.push(f);
+  }
+
+  return result;
 }
 
 export function runRules(
@@ -80,5 +152,5 @@ export function runRules(
     }
   }
 
-  return findings;
+  return crossTierGate(findings, workflows, options.auditDataByWorkflow);
 }
