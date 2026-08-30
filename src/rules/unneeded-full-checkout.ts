@@ -1,9 +1,13 @@
-import type { Rule, Finding, ParsedStep } from "../types.ts";
+import type { Rule, Finding, ParsedStep, ParsedJob } from "../types.ts";
 import { parseActionRef } from "../parser.ts";
 
-const HISTORY_COMMANDS = /\bgit\s+(log|describe|tag|rev-list|blame|diff|merge-base|shortlog|cherry|bisect|branch|checkout|switch|merge|rebase|cliff)\b/;
+const HISTORY_COMMANDS = /\bgit\s+(log|describe|tag|rev-list|blame|diff|fetch|merge-base|shortlog|cherry|bisect|branch|checkout|switch|merge|rebase|cliff|worktree)\b/;
 
 const HISTORY_RUN_PATTERNS = /\b(semantic-release|release-it|standard-version|lerna\s|nx\s+affected|changeset|goreleaser|git-cliff|cargo\s+release|sonar|gitleaks|trufflehog|commitlint|mike\s+deploy)\b/;
+
+const OPAQUE_TOOLS = /\b(make|just|turbo|nx)\b/;
+const OPAQUE_RUNNERS = /\b(npm|pnpm|bun|yarn)\s+run\b/;
+const OPAQUE_SCRIPTS = /\.\/scripts\//;
 
 const RELEASE_TOOLS = new Set([
   "MarcoIeni/release-plz-action",
@@ -22,27 +26,61 @@ const RELEASE_TOOLS = new Set([
   "SonarSource/sonarcloud-github-action",
   "SonarSource/sonarqube-scan-action",
   "gitleaks/gitleaks-action",
+  "dorny/paths-filter",
+  "tj-actions/changed-files",
 ]);
 
-function needsHistory(steps: ParsedStep[]): boolean {
+const RELEASE_JOB_TOKENS = new Set([
+  "release", "publish", "deploy", "version", "changelog",
+  "tag", "covector", "changeset", "semantic", "bump",
+]);
+
+const RELEASE_WORKFLOW_PATTERN = /\b(release|publish|deploy)\b/i;
+
+function tokenize(label: string): string[] {
+  return label
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .split(/[_\-\s/.]+/)
+    .map((t) => t.toLowerCase())
+    .filter((t) => t.length > 0);
+}
+
+function isReleaseJob(job: ParsedJob): boolean {
+  const tokens = tokenize(job.id);
+  if (tokens.some((t) => RELEASE_JOB_TOKENS.has(t))) return true;
+  if (job.name) {
+    const nameTokens = tokenize(job.name);
+    if (nameTokens.some((t) => RELEASE_JOB_TOKENS.has(t))) return true;
+  }
+  return false;
+}
+
+function hasFetchTags(step: ParsedStep): boolean {
+  return step.with?.["fetch-tags"] === true || step.with?.["fetch-tags"] === "true";
+}
+
+function needsHistory(steps: ParsedStep[], job: ParsedJob, workflowName: string): boolean {
+  if (isReleaseJob(job)) return true;
+  if (RELEASE_WORKFLOW_PATTERN.test(workflowName)) return true;
+
   for (const step of steps) {
     if (step.run) {
       if (HISTORY_COMMANDS.test(step.run)) return true;
       if (HISTORY_RUN_PATTERNS.test(step.run)) return true;
+      if (OPAQUE_TOOLS.test(step.run)) return true;
+      if (OPAQUE_RUNNERS.test(step.run)) return true;
+      if (OPAQUE_SCRIPTS.test(step.run)) return true;
     }
 
     if (step.uses) {
       const { key, isLocal } = parseActionRef(step.uses);
       if (RELEASE_TOOLS.has(key)) return true;
-      // Local composite actions and opaque scripts are conservative
       if (isLocal) return true;
+      if (/covector/i.test(key)) return true;
     }
-  }
 
-  // Opaque build tools that might need history
-  for (const step of steps) {
-    if (step.run && /\b(make|just)\b/.test(step.run)) return true;
-    if (step.run && /\.\/scripts\//.test(step.run)) return true;
+    if (hasFetchTags(step)) return true;
   }
 
   return false;
@@ -66,7 +104,7 @@ export const unneededFullCheckout: Rule = {
         const depth = step.with?.["fetch-depth"];
         if (depth !== 0 && depth !== "0") continue;
 
-        if (needsHistory(job.steps)) continue;
+        if (needsHistory(job.steps, job, ctx.workflow.name)) continue;
 
         const label = step.name ?? step.uses;
         findings.push({

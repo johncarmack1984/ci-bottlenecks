@@ -1,0 +1,23 @@
+# eval: rule=unneeded-full-checkout expect=silent kind=fp
+# why: dorny/paths-filter needs git history to compare changed files between commits
+# source: dorny/paths-filter requires fetch-depth: 0 for push events
+name: CI
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            src:
+              - 'src/**'

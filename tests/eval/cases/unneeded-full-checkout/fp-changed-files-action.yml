@@ -1,7 +1,7 @@
 # eval: rule=unneeded-full-checkout expect=silent kind=fp
-# why: job named "changelog" is a release/versioning job that needs full history
-# source: third-party changelog generators that read git log internally
-name: Custom Changelog
+# why: tj-actions/changed-files needs git history to determine changed files
+# source: changed-files action requires fetch-depth: 0
+name: CI
 on:
   push:
     branches: [main]
@@ -9,11 +9,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  changelog:
+  changes:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: some-org/changelog-generator@v3
+      - uses: tj-actions/changed-files@v44
+        id: changed

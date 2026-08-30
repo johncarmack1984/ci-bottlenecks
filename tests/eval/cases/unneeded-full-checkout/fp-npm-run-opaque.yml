@@ -1,7 +1,7 @@
 # eval: rule=unneeded-full-checkout expect=silent kind=fp
-# why: job named "changelog" is a release/versioning job that needs full history
-# source: third-party changelog generators that read git log internally
-name: Custom Changelog
+# why: npm run invokes an opaque package script that may call git internally — cannot assume history is unused
+# source: opaque package runner exemption
+name: CI
 on:
   push:
     branches: [main]
@@ -9,11 +9,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  changelog:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: some-org/changelog-generator@v3
+      - run: npm run build

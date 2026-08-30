@@ -1,0 +1,19 @@
+# eval: rule=unneeded-full-checkout expect=silent kind=fp
+# why: workflow named "Release" is a release pipeline — full history is expected for changelog/tagging
+# source: release/publish/deploy-named workflow exemption
+name: Release
+on:
+  push:
+    tags: ['v*']
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npm run build
