@@ -11,7 +11,7 @@ import { detectNwo } from "./api.ts";
 import { discoverWorkflows, loadAuditData } from "./shared.ts";
 import type { Finding, Severity, ParsedWorkflow, WorkflowAuditData } from "./types.ts";
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 
 const VALID_FORMATS = new Set(["text", "json", "sarif", "summary"]);
 const VALID_SEVERITIES = new Set(["high", "medium", "low", "info", "none"]);

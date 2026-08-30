@@ -9636,7 +9636,7 @@ Remediation: ${f.remediation}`
         tool: {
           driver: {
             name: "ci-bottlenecks",
-            version: "0.1.1",
+            version: "0.1.2",
             informationUri: "https://github.com/johncarmack1984/ci-bottlenecks",
             rules: ruleDescriptors
           }
