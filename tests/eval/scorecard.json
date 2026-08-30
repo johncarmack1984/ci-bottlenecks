@@ -1,5 +1,4 @@
 {
-  "generated": "2026-08-30T18:06:23.496Z",
   "rules": [
     {
       "rule": "cache-key-no-hash",

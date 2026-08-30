@@ -344,7 +344,6 @@ function main() {
 
   const scorecardPath = join(import.meta.dir, "..", "tests", "eval", "scorecard.json");
   const scorecardData = {
-    generated: new Date().toISOString(),
     rules: sortedScores.map((s) => ({
       rule: s.rule,
       cases: s.total,
