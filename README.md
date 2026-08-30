@@ -63,7 +63,7 @@ ci-bottlenecks [path] [options]
 
 ### Static rules
 
-These run against your workflow YAML files with no API access required.
+These run against your workflow YAML files with no API access required. Each rule is tested by a scored eval corpus (`just eval-score`) tracking precision and recall per rule.
 
 | ID | Severity | Description |
 |----|----------|-------------|
@@ -146,6 +146,10 @@ name: Release
 |--------|-------------|
 | `findings` | Number of findings |
 | `sarif-path` | Path to the generated SARIF file |
+
+## Testing and contributing
+
+The project includes a scored eval corpus under `tests/eval/` that tests every rule against synthetic but realistic workflow fixtures. Run `just eval-score` to see per-rule precision and recall. Every false-positive report should become a case before it becomes a fix — see `tests/eval/README.md` for the manifest grammar and workflow.
 
 ## Roadmap
 

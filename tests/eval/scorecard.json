@@ -1,0 +1,365 @@
+{
+  "generated": "2026-08-30T17:36:33.384Z",
+  "rules": [
+    {
+      "rule": "cache-key-no-hash",
+      "cases": 8,
+      "passed": 8,
+      "failed": 0,
+      "tp": {
+        "total": 4,
+        "hit": 4
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "critical-path",
+      "cases": 10,
+      "passed": 9,
+      "failed": 0,
+      "tp": {
+        "total": 5,
+        "hit": 5
+      },
+      "fp": {
+        "total": 4,
+        "guarded": 4
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "double-cache",
+      "cases": 7,
+      "passed": 7,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "double-run-measured",
+      "cases": 7,
+      "passed": 7,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "double-trigger",
+      "cases": 14,
+      "passed": 14,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 9,
+        "guarded": 9
+      },
+      "fn": 1,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "false-serialization",
+      "cases": 17,
+      "passed": 16,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 13,
+        "guarded": 13
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "flaky-or-hanging",
+      "cases": 9,
+      "passed": 9,
+      "failed": 0,
+      "tp": {
+        "total": 4,
+        "hit": 4
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 2,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "install-no-cache",
+      "cases": 13,
+      "passed": 13,
+      "failed": 0,
+      "tp": {
+        "total": 4,
+        "hit": 4
+      },
+      "fp": {
+        "total": 8,
+        "guarded": 8
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "macos-not-needed",
+      "cases": 15,
+      "passed": 14,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 11,
+        "guarded": 11
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "matrix-max-parallel",
+      "cases": 6,
+      "passed": 6,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "no-concurrency",
+      "cases": 12,
+      "passed": 12,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 8,
+        "guarded": 8
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "no-path-filter",
+      "cases": 6,
+      "passed": 5,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "no-timeout",
+      "cases": 15,
+      "passed": 15,
+      "failed": 0,
+      "tp": {
+        "total": 7,
+        "hit": 7
+      },
+      "fp": {
+        "total": 7,
+        "guarded": 7
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "queue-dominated",
+      "cases": 6,
+      "passed": 6,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "repeated-setup",
+      "cases": 10,
+      "passed": 9,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 7,
+        "guarded": 7
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "setup-dominated",
+      "cases": 6,
+      "passed": 6,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 3,
+        "guarded": 3
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "unneeded-full-checkout",
+      "cases": 14,
+      "passed": 13,
+      "failed": 0,
+      "tp": {
+        "total": 2,
+        "hit": 2
+      },
+      "fp": {
+        "total": 11,
+        "guarded": 11
+      },
+      "fn": 1,
+      "miss": 0,
+      "xfail": 1,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "rule": "unpinned-action",
+      "cases": 10,
+      "passed": 10,
+      "failed": 0,
+      "tp": {
+        "total": 3,
+        "hit": 3
+      },
+      "fp": {
+        "total": 6,
+        "guarded": 6
+      },
+      "fn": 0,
+      "miss": 1,
+      "xfail": 0,
+      "xpass": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ]
+}
