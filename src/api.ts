@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import type { RunData, JobData, StepData } from "./types.ts";
 
 const API_BASE = "https://api.github.com";
@@ -16,14 +17,8 @@ async function apiGet(path: string): Promise<unknown> {
     return resp.json();
   }
 
-  const proc = Bun.spawn(["gh", "api", path], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const text = await new Response(proc.stdout).text();
-  const exitCode = await proc.exited;
-  if (exitCode !== 0) return null;
   try {
+    const text = execSync(`gh api ${path}`, { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] });
     return JSON.parse(text);
   } catch {
     return null;
@@ -89,11 +84,7 @@ export async function fetchJobsForRun(nwo: string, runId: number): Promise<JobDa
 
 export function detectNwo(): string | null {
   try {
-    const proc = Bun.spawnSync(["git", "remote", "get-url", "origin"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const url = new TextDecoder().decode(proc.stdout).trim();
+    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
     if (!url) return null;
 
     const sshMatch = url.match(/git@[^:]+:(.+?)(?:\.git)?$/);
