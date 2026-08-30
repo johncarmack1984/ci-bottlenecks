@@ -7374,28 +7374,18 @@ timeout-minutes: 30`
 };
 
 // src/rules/double-trigger.ts
-var DEFAULT_BRANCHES = new Set(["main", "master"]);
-function isDefaultBranchOnly(branches) {
-  if (!Array.isArray(branches) || branches.length === 0)
-    return false;
-  return branches.every((b) => DEFAULT_BRANCHES.has(b));
+function hasGlobChars(pattern) {
+  return /[*?[\]]/.test(pattern);
 }
-function isSingleDefaultBranch(branches) {
-  if (!Array.isArray(branches) || branches.length !== 1)
-    return false;
-  return DEFAULT_BRANCHES.has(branches[0]);
-}
-function branchesOverlap(push, pr) {
+function findOverlappingPatterns(push) {
   if ((push.tags || push["tags-ignore"]) && !push.branches)
-    return false;
-  if (isDefaultBranchOnly(push.branches))
-    return false;
-  if (isSingleDefaultBranch(push.branches))
-    return false;
-  if (!Array.isArray(push.branches) || !Array.isArray(pr.branches))
-    return true;
-  const prSet = new Set(pr.branches);
-  return push.branches.some((b) => prSet.has(b));
+    return null;
+  if (!Array.isArray(push.branches) || push.branches.length === 0)
+    return [];
+  const globs = push.branches.filter(hasGlobChars);
+  if (globs.length > 0)
+    return globs;
+  return null;
 }
 function prTriggersOnPush(pr) {
   if (!Array.isArray(pr.types))
@@ -7415,11 +7405,16 @@ var doubleTrigger = {
     const pr = triggers.pull_request;
     if (!prTriggersOnPush(pr))
       return [];
-    if (!branchesOverlap(push, pr))
+    const patterns = findOverlappingPatterns(push);
+    if (patterns === null)
       return [];
-    const fmtBranches = (b) => Array.isArray(b) ? `[${b.join(", ")}]` : "(all branches)";
-    const pushDesc = fmtBranches(push.branches);
-    const prDesc = fmtBranches(pr.branches);
+    let evidence;
+    if (patterns.length > 0) {
+      const quoted = patterns.map((p) => `"${p}"`).join(", ");
+      evidence = `push.branches pattern ${quoted} matches PR head branches, causing runs on both push and pull_request events`;
+    } else {
+      evidence = `push has no branch filter, so every push (including to PR head branches) fires both triggers`;
+    }
     const fmtArr = (v) => Array.isArray(v) ? v.join(", ") : String(v);
     const patchParts = ["on:", "  push:"];
     patchParts.push("    branches: [main]");
@@ -7438,7 +7433,7 @@ var doubleTrigger = {
         tier: "static",
         workflow: ctx.workflow.path,
         message: `Workflow has both push and pull_request triggers with overlapping branches, causing duplicate CI runs`,
-        evidence: `push.branches: ${pushDesc}, pull_request.branches: ${prDesc}`,
+        evidence,
         remediation: "Restrict push to the default branch and/or tags, or remove one trigger.",
         patch: patchParts.join(`
 `)
@@ -7771,8 +7766,11 @@ var installNoCache = {
 };
 
 // src/rules/unneeded-full-checkout.ts
-var HISTORY_COMMANDS = /\bgit\s+(log|describe|tag|rev-list|blame|diff|merge-base|shortlog|cherry|bisect|branch|checkout|switch|merge|rebase|cliff)\b/;
+var HISTORY_COMMANDS = /\bgit\s+(log|describe|tag|rev-list|blame|diff|fetch|merge-base|shortlog|cherry|bisect|branch|checkout|switch|merge|rebase|cliff|worktree)\b/;
 var HISTORY_RUN_PATTERNS = /\b(semantic-release|release-it|standard-version|lerna\s|nx\s+affected|changeset|goreleaser|git-cliff|cargo\s+release|sonar|gitleaks|trufflehog|commitlint|mike\s+deploy)\b/;
+var OPAQUE_TOOLS = /\b(make|just|turbo|nx)\b/;
+var OPAQUE_RUNNERS = /\b(npm|pnpm|bun|yarn)\s+run\b/;
+var OPAQUE_SCRIPTS = /\.\/scripts\//;
 var RELEASE_TOOLS = new Set([
   "MarcoIeni/release-plz-action",
   "release-plz/action",
@@ -7789,14 +7787,56 @@ var RELEASE_TOOLS = new Set([
   "nrwl/nx-set-shas",
   "SonarSource/sonarcloud-github-action",
   "SonarSource/sonarqube-scan-action",
-  "gitleaks/gitleaks-action"
+  "gitleaks/gitleaks-action",
+  "dorny/paths-filter",
+  "tj-actions/changed-files"
 ]);
-function needsHistory(steps) {
+var RELEASE_JOB_TOKENS = new Set([
+  "release",
+  "publish",
+  "deploy",
+  "version",
+  "changelog",
+  "tag",
+  "covector",
+  "changeset",
+  "semantic",
+  "bump"
+]);
+var RELEASE_WORKFLOW_PATTERN = /\b(release|publish|deploy)\b/i;
+function tokenize(label) {
+  return label.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").split(/[_\-\s/.]+/).map((t) => t.toLowerCase()).filter((t) => t.length > 0);
+}
+function isReleaseJob(job) {
+  const tokens = tokenize(job.id);
+  if (tokens.some((t) => RELEASE_JOB_TOKENS.has(t)))
+    return true;
+  if (job.name) {
+    const nameTokens = tokenize(job.name);
+    if (nameTokens.some((t) => RELEASE_JOB_TOKENS.has(t)))
+      return true;
+  }
+  return false;
+}
+function hasFetchTags(step) {
+  return step.with?.["fetch-tags"] === true || step.with?.["fetch-tags"] === "true";
+}
+function needsHistory(steps, job, workflowName) {
+  if (isReleaseJob(job))
+    return true;
+  if (RELEASE_WORKFLOW_PATTERN.test(workflowName))
+    return true;
   for (const step of steps) {
     if (step.run) {
       if (HISTORY_COMMANDS.test(step.run))
         return true;
       if (HISTORY_RUN_PATTERNS.test(step.run))
+        return true;
+      if (OPAQUE_TOOLS.test(step.run))
+        return true;
+      if (OPAQUE_RUNNERS.test(step.run))
+        return true;
+      if (OPAQUE_SCRIPTS.test(step.run))
         return true;
     }
     if (step.uses) {
@@ -7805,12 +7845,10 @@ function needsHistory(steps) {
         return true;
       if (isLocal)
         return true;
+      if (/covector/i.test(key))
+        return true;
     }
-  }
-  for (const step of steps) {
-    if (step.run && /\b(make|just)\b/.test(step.run))
-      return true;
-    if (step.run && /\.\/scripts\//.test(step.run))
+    if (hasFetchTags(step))
       return true;
   }
   return false;
@@ -7832,7 +7870,7 @@ var unneededFullCheckout = {
         const depth = step.with?.["fetch-depth"];
         if (depth !== 0 && depth !== "0")
           continue;
-        if (needsHistory(job.steps))
+        if (needsHistory(job.steps, job, ctx.workflow.name))
           continue;
         const label = step.name ?? step.uses;
         findings.push({
@@ -7861,11 +7899,19 @@ var MACOS_KEYWORDS = /\b(tauri\s+ios|tauri\s+macos|apple-|ios|darwin|mac|osx)\b/
 var MACOS_EXTENSIONS = /\.(app|dmg|pkg)\b/;
 var MACOS_RUN_PATTERNS = /\b(pod\s+(install|trunk)|xcode|--mac\b|electron-builder\s+--mac|flutter\s+build\s+macos)\b/i;
 var MACOS_ACTION_PATTERNS = /tauri-action|electron-builder|fastlane|xcode|cocoapods/i;
-var MACOS_JOB_PATTERN = /\b(mac|osx|darwin|ios|apple|xcode|cocoapods|macos)\b/i;
+var MACOS_JOB_TOKENS = new Set(["mac", "osx", "darwin", "ios", "apple", "xcode", "cocoapods", "macos"]);
+var LINT_JOB_TOKENS = new Set(["lint", "fmt", "format", "docs", "typecheck", "markdown", "markdownlint", "clippy"]);
+var PRIMARY_TOOL_PATTERN = /\b(cargo|npm|pnpm|bun|yarn|go|python|pytest|pip|make|cmake|gradle|mvn|dotnet|ruby|gem|bundle|biome)\b/;
+function tokenize2(label) {
+  return label.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").split(/[_\-\s/.]+/).map((t) => t.toLowerCase()).filter((t) => t.length > 0);
+}
+function matchesTokens(label, tokens) {
+  return tokenize2(label).some((t) => tokens.has(t));
+}
 function hasMacOSWork(job) {
-  if (MACOS_JOB_PATTERN.test(job.id))
+  if (matchesTokens(job.id, MACOS_JOB_TOKENS))
     return true;
-  if (job.name && MACOS_JOB_PATTERN.test(job.name))
+  if (job.name && matchesTokens(job.name, MACOS_JOB_TOKENS))
     return true;
   for (const step of job.steps) {
     const run = step.run ?? "";
@@ -7897,10 +7943,49 @@ function isMacOSRunner(runsOn) {
   const values = Array.isArray(runsOn) ? runsOn : [runsOn];
   return values.some((v) => /\bmacos-/.test(v));
 }
+function isLinuxRunner(runsOn) {
+  const values = Array.isArray(runsOn) ? runsOn : [runsOn];
+  return values.some((v) => /\bubuntu-|\blinux\b/i.test(v));
+}
+function getPrimaryTools(job) {
+  const tools = new Set;
+  for (const step of job.steps) {
+    if (!step.run)
+      continue;
+    const m = step.run.match(PRIMARY_TOOL_PATTERN);
+    if (m)
+      tools.add(m[1]);
+  }
+  return tools;
+}
+function hasLinuxTwin(job, ctx) {
+  const macTools = getPrimaryTools(job);
+  if (macTools.size === 0)
+    return false;
+  for (const [otherId, otherJob] of ctx.workflow.jobs) {
+    if (otherId === job.id)
+      continue;
+    if (!isLinuxRunner(otherJob["runs-on"]))
+      continue;
+    const otherTools = getPrimaryTools(otherJob);
+    for (const tool of macTools) {
+      if (otherTools.has(tool))
+        return true;
+    }
+  }
+  return false;
+}
+function isLintShaped(job) {
+  if (matchesTokens(job.id, LINT_JOB_TOKENS))
+    return true;
+  if (job.name && matchesTokens(job.name, LINT_JOB_TOKENS))
+    return true;
+  return false;
+}
 var macosNotNeeded = {
   id: "macos-not-needed",
   tier: "static",
-  severity: "medium",
+  severity: "low",
   describe: "macOS runner used without macOS-specific work",
   check(ctx) {
     const findings = [];
@@ -7909,17 +7994,23 @@ var macosNotNeeded = {
         continue;
       if (hasMacOSWork(job))
         continue;
+      if (!hasLinuxTwin(job, ctx))
+        continue;
+      const lintShaped = isLintShaped(job);
+      if (!lintShaped)
+        continue;
       const label = job.name ?? jobId;
       const runner = Array.isArray(job["runs-on"]) ? job["runs-on"].join(", ") : job["runs-on"];
+      const severity = lintShaped ? "medium" : "low";
       findings.push({
         rule: "macos-not-needed",
-        severity: "medium",
+        severity,
         tier: "static",
         workflow: ctx.workflow.path,
         job: jobId,
         location: job.line ? { line: job.line } : undefined,
-        message: `Job "${label}" runs on ${runner} but has no macOS-specific steps`,
-        evidence: "macOS minutes bill at 10× Linux.",
+        message: `Job "${label}" runs on ${runner} with no macOS-specific work detected and a Linux equivalent exists`,
+        evidence: "macOS minutes bill at 10× Linux. This job could run on an ubuntu runner.",
         remediation: "Switch to an ubuntu runner unless macOS is required.",
         patch: `# In job "${jobId}":
 runs-on: ubuntu-latest`
@@ -7930,10 +8021,39 @@ runs-on: ubuntu-latest`
 };
 
 // src/rules/false-serialization.ts
-var GATE_PATTERN = /check|gate|guard|pre_job|changes|filter|lint/i;
+var GATE_PATTERN = /check|gate|guard|pre_job|changes|filter/i;
 var GATE_ACTIONS = ["dorny/paths-filter", "fkirc/skip-duplicate-actions"];
-var CI_JOB_PATTERN = /\b(build|test|lint|check|clippy|fmt|typecheck|bench|coverage|e2e)\b/i;
-var DEPLOY_JOB_PATTERN = /\b(deploy|publish|release|upload|push|pages|tag)\b/i;
+var CI_TOKENS = new Set(["build", "test", "lint", "check", "clippy", "fmt", "typecheck", "bench", "coverage", "e2e"]);
+var DEPLOY_TOKENS = new Set(["deploy", "publish", "release", "upload", "push", "pages", "tag"]);
+var CI_STEP_PATTERN = /\b(build|test|lint|check|clippy|fmt|typecheck|bench|coverage|e2e)\b/i;
+var DEPLOY_STEP_ACTIONS = new Set([
+  "softprops/action-gh-release",
+  "ncipollo/release-action",
+  "svenstaro/upload-release-action",
+  "actions/upload-release-asset",
+  "docker/build-push-action"
+]);
+var DEPLOY_STEP_COMMANDS = /\b(npm\s+publish|cargo\s+publish|docker\s+push|gh\s+release\s+(upload|create|edit)|aws\s+s3\s+(sync|cp)|aws\s+cloudfront|terraform\s+apply|cdk\s+deploy|sam\s+deploy|pulumi\s+up|aws\s+cloudformation\s+deploy|wrangler\s+deploy|vercel\s+deploy|netlify\s+deploy|flyctl\s+deploy|git\s+push)\b/i;
+var INFRA_COMMANDS = /\b(terraform\s+apply|cdk\s+deploy|sam\s+deploy|pulumi\s+up|aws\s+cloudformation\s+deploy)\b/i;
+var CACHE_SAVE_ACTIONS = new Set([
+  "actions/cache",
+  "actions/cache/save",
+  "Swatinem/rust-cache",
+  "Mozilla-Actions/sccache-action"
+]);
+var CACHE_RESTORE_ACTIONS = new Set([
+  "actions/cache",
+  "actions/cache/restore",
+  "Swatinem/rust-cache",
+  "Mozilla-Actions/sccache-action"
+]);
+var CACHE_JOB_TOKENS = new Set(["deps", "dependencies", "warm", "prime", "prefetch", "vendor"]);
+function tokenize3(label) {
+  return label.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").split(/[_\-\s/.]+/).map((t) => t.toLowerCase()).filter((t) => t.length > 0);
+}
+function matchesTokens2(label, tokens) {
+  return tokenize3(label).some((t) => tokens.has(t));
+}
 function isGateJob(job) {
   if (GATE_PATTERN.test(job.id) || job.name && GATE_PATTERN.test(job.name))
     return true;
@@ -7944,17 +8064,69 @@ function isGateJob(job) {
     return GATE_ACTIONS.some((ga) => key === ga);
   });
 }
+function hasDeploySteps(job) {
+  for (const step of job.steps) {
+    if (step.run && DEPLOY_STEP_COMMANDS.test(step.run))
+      return true;
+    if (step.uses) {
+      const { key } = parseActionRef(step.uses);
+      if (DEPLOY_STEP_ACTIONS.has(key))
+        return true;
+    }
+  }
+  return false;
+}
 function isPureCIJob(job) {
   const label = job.name ?? job.id;
-  if (DEPLOY_JOB_PATTERN.test(label))
+  if (matchesTokens2(label, DEPLOY_TOKENS))
+    return false;
+  if (hasDeploySteps(job))
     return false;
   if (job.environment)
     return false;
   if (job.if && /always\(\)/.test(job.if))
     return false;
-  if (CI_JOB_PATTERN.test(job.id) || job.name && CI_JOB_PATTERN.test(job.name))
+  if (matchesTokens2(job.id, CI_TOKENS) || job.name && matchesTokens2(job.name, CI_TOKENS))
     return true;
-  return job.steps.some((s) => s.run && CI_JOB_PATTERN.test(s.run));
+  return job.steps.some((s) => s.run && CI_STEP_PATTERN.test(s.run));
+}
+function isInfraJob(job) {
+  return job.steps.some((s) => s.run && INFRA_COMMANDS.test(s.run));
+}
+function usesCloudTooling(job) {
+  return job.steps.some((s) => {
+    if (s.uses) {
+      const { key } = parseActionRef(s.uses);
+      if (key === "aws-actions/configure-aws-credentials")
+        return true;
+    }
+    if (s.run && /\b(aws\s|terraform\s+(output|plan))\b/i.test(s.run))
+      return true;
+    return false;
+  });
+}
+function hasCacheSave(job) {
+  const label = job.name ?? job.id;
+  if (matchesTokens2(label, CACHE_JOB_TOKENS))
+    return true;
+  return job.steps.some((s) => {
+    if (!s.uses)
+      return false;
+    const { key } = parseActionRef(s.uses);
+    return CACHE_SAVE_ACTIONS.has(key);
+  });
+}
+function hasCacheRestore(job) {
+  return job.steps.some((s) => {
+    if (!s.uses)
+      return false;
+    const { key } = parseActionRef(s.uses);
+    if (CACHE_RESTORE_ACTIONS.has(key))
+      return true;
+    if (/^actions\/setup-/.test(key) && s.with?.cache)
+      return true;
+    return false;
+  });
 }
 function stringifyJobMinusNeeds(job) {
   if (!job.raw)
@@ -8115,6 +8287,10 @@ var falseSerialization = {
         if (new RegExp(`needs\\.${depId}\\b`).test(bValues))
           continue;
         if (artifactHandoff(jobA, jobB))
+          continue;
+        if (isInfraJob(jobA) && usesCloudTooling(jobB))
+          continue;
+        if (hasCacheSave(jobA) && hasCacheRestore(jobB))
           continue;
         const labelB = jobB.name ?? jobBId;
         const labelA = jobA.name ?? depId;

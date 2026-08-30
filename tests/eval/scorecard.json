@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-30T17:36:33.384Z",
+  "generated": "2026-08-30T18:06:23.496Z",
   "rules": [
     {
       "rule": "cache-key-no-hash",
@@ -83,18 +83,18 @@
     },
     {
       "rule": "double-trigger",
-      "cases": 14,
-      "passed": 14,
+      "cases": 19,
+      "passed": 19,
       "failed": 0,
       "tp": {
-        "total": 3,
-        "hit": 3
+        "total": 4,
+        "hit": 4
       },
       "fp": {
-        "total": 9,
-        "guarded": 9
+        "total": 14,
+        "guarded": 14
       },
-      "fn": 1,
+      "fn": 0,
       "miss": 1,
       "xfail": 0,
       "xpass": 0,
@@ -103,20 +103,20 @@
     },
     {
       "rule": "false-serialization",
-      "cases": 17,
-      "passed": 16,
+      "cases": 27,
+      "passed": 27,
       "failed": 0,
       "tp": {
-        "total": 3,
-        "hit": 3
+        "total": 5,
+        "hit": 5
       },
       "fp": {
-        "total": 13,
-        "guarded": 13
+        "total": 22,
+        "guarded": 22
       },
-      "fn": 1,
+      "fn": 0,
       "miss": 0,
-      "xfail": 1,
+      "xfail": 0,
       "xpass": 0,
       "precision": 1,
       "recall": 1
@@ -163,20 +163,20 @@
     },
     {
       "rule": "macos-not-needed",
-      "cases": 15,
-      "passed": 14,
+      "cases": 18,
+      "passed": 18,
       "failed": 0,
       "tp": {
         "total": 3,
         "hit": 3
       },
       "fp": {
-        "total": 11,
-        "guarded": 11
+        "total": 15,
+        "guarded": 15
       },
-      "fn": 1,
+      "fn": 0,
       "miss": 0,
-      "xfail": 1,
+      "xfail": 0,
       "xpass": 0,
       "precision": 1,
       "recall": 1
@@ -323,20 +323,20 @@
     },
     {
       "rule": "unneeded-full-checkout",
-      "cases": 14,
-      "passed": 13,
+      "cases": 22,
+      "passed": 22,
       "failed": 0,
       "tp": {
         "total": 2,
         "hit": 2
       },
       "fp": {
-        "total": 11,
-        "guarded": 11
+        "total": 20,
+        "guarded": 20
       },
-      "fn": 1,
+      "fn": 0,
       "miss": 0,
-      "xfail": 1,
+      "xfail": 0,
       "xpass": 0,
       "precision": 1,
       "recall": 1
