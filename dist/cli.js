@@ -6946,7 +6946,7 @@ var require_public_api = __commonJS(function(exports) {
 
 // src/cli.ts
 import { readFileSync as readFileSync2, writeFileSync as writeFileSync2, mkdirSync as mkdirSync2 } from "fs";
-import { join as join2, relative, resolve } from "path";
+import { join as join3, relative, resolve } from "path";
 
 // node_modules/yaml/dist/index.js
 var composer = require_composer();
@@ -9503,8 +9503,8 @@ ${c("\x1B[1m", workflow)}${headerSuffix}`);
           lines.push(`      ${patchLine}`);
         }
       }
-      if (f.estimatedSavings?.minutesPerRun) {
-        lines.push(`    ${c("\x1B[32m", `~${f.estimatedSavings.minutesPerRun}min/run saved (${f.estimatedSavings.confidence})`)}`);
+      if (f.estimatedSavings?.minutesPerRun && f.estimatedSavings.confidence === "exact") {
+        lines.push(`    ${c("\x1B[32m", `~${f.estimatedSavings.minutesPerRun}min/run saved`)}`);
       }
     }
   }
@@ -9746,12 +9746,29 @@ function detectNwo(cwd) {
 
 // src/shared.ts
 import { readdirSync, existsSync as existsSync2 } from "fs";
-import { join } from "path";
+import { join as join2 } from "path";
 
 // src/cache.ts
 import { existsSync, mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
-var DEFAULT_CACHE_DIR = ".ci-bottlenecks/cache";
+import { dirname, join } from "node:path";
+import { homedir, tmpdir } from "node:os";
+function defaultCacheDir() {
+  const override = process.env["CI_BOTTLENECKS_CACHE"];
+  if (override)
+    return override;
+  const runnerTemp = process.env["RUNNER_TEMP"];
+  if (runnerTemp)
+    return join(runnerTemp, "ci-bottlenecks-cache");
+  const xdg = process.env["XDG_CACHE_HOME"];
+  if (xdg)
+    return join(xdg, "ci-bottlenecks");
+  try {
+    return join(homedir(), ".cache", "ci-bottlenecks");
+  } catch {
+    return join(tmpdir(), "ci-bottlenecks-cache");
+  }
+}
+var DEFAULT_CACHE_DIR = defaultCacheDir();
 async function cachedFetch(cacheDir, key, ttlMs, fetcher) {
   const filePath = `${cacheDir}/${key}.json`;
   if (existsSync(filePath)) {
@@ -9775,11 +9792,11 @@ async function cachedFetch(cacheDir, key, ttlMs, fetcher) {
 
 // src/shared.ts
 function discoverWorkflows(basePath) {
-  const wfDir = join(basePath, ".github", "workflows");
+  const wfDir = join2(basePath, ".github", "workflows");
   if (!existsSync2(wfDir))
     return [];
   try {
-    return readdirSync(wfDir).filter((f) => f.endsWith(".yml") || f.endsWith(".yaml")).map((f) => join(wfDir, f));
+    return readdirSync(wfDir).filter((f) => f.endsWith(".yml") || f.endsWith(".yaml")).map((f) => join2(wfDir, f));
   } catch {
     return [];
   }
@@ -9935,7 +9952,7 @@ async function main() {
   const basePath = resolve(args.path);
   const workflowFiles = discoverWorkflows(basePath);
   if (workflowFiles.length === 0) {
-    process.stderr.write(`No workflow files found in ${join2(basePath, ".github/workflows")}
+    process.stderr.write(`No workflow files found in ${join3(basePath, ".github/workflows")}
 `);
     process.exit(2);
   }
@@ -10060,7 +10077,7 @@ function writeRecordedSnapshots(dir, workflows, auditDataByWorkflow) {
       }))
     };
     const slug = wf.path.replace(/[/\\]/g, "_").replace(/\.ya?ml$/, "");
-    writeFileSync2(join2(dir, `${slug}.timing.json`), JSON.stringify(anonymized, null, 2) + `
+    writeFileSync2(join3(dir, `${slug}.timing.json`), JSON.stringify(anonymized, null, 2) + `
 `);
     process.stderr.write(`Recorded ${slug}.timing.json (${data.runs.length} runs)
 `);

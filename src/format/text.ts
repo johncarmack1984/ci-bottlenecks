@@ -111,9 +111,12 @@ export function formatText(findings: Finding[], auditDataByWorkflow?: Map<string
           lines.push(`      ${patchLine}`);
         }
       }
-      if (f.estimatedSavings?.minutesPerRun) {
+      // Only claim savings when the arithmetic is exact (e.g. a duplicated
+      // run's whole minutes). Estimates still rank the "at stake" header,
+      // but printing them as "saved" would promise more than the data shows.
+      if (f.estimatedSavings?.minutesPerRun && f.estimatedSavings.confidence === "exact") {
         lines.push(
-          `    ${c("\x1b[32m", `~${f.estimatedSavings.minutesPerRun}min/run saved (${f.estimatedSavings.confidence})`)}`,
+          `    ${c("\x1b[32m", `~${f.estimatedSavings.minutesPerRun}min/run saved`)}`,
         );
       }
     }

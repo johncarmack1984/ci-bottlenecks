@@ -1,7 +1,26 @@
 import { existsSync, mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { homedir, tmpdir } from "node:os";
 
-export const DEFAULT_CACHE_DIR = ".ci-bottlenecks/cache";
+// Cache lives in the user's cache directory, never in the audited repo's
+// working tree (an untracked .ci-bottlenecks/ there risks being swept into
+// someone's commit). Override with CI_BOTTLENECKS_CACHE; on hosted runners
+// RUNNER_TEMP keeps it inside the job's disposable workspace.
+function defaultCacheDir(): string {
+  const override = process.env["CI_BOTTLENECKS_CACHE"];
+  if (override) return override;
+  const runnerTemp = process.env["RUNNER_TEMP"];
+  if (runnerTemp) return join(runnerTemp, "ci-bottlenecks-cache");
+  const xdg = process.env["XDG_CACHE_HOME"];
+  if (xdg) return join(xdg, "ci-bottlenecks");
+  try {
+    return join(homedir(), ".cache", "ci-bottlenecks");
+  } catch {
+    return join(tmpdir(), "ci-bottlenecks-cache");
+  }
+}
+
+export const DEFAULT_CACHE_DIR = defaultCacheDir();
 
 export async function cachedFetch<T>(
   cacheDir: string,
