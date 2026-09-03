@@ -1,6 +1,6 @@
 {
   "name": "ci-bottlenecks",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Find performance problems in GitHub Actions pipelines",
   "type": "module",
   "main": "dist/index.js",

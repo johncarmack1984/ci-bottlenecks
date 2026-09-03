@@ -7421,9 +7421,9 @@ function detectCachedEcosystems(steps) {
 }
 var installNoCache = {
   id: "install-no-cache",
-  tier: "static",
+  tier: "audit",
   severity: "medium",
-  describe: "Package install without a cache mechanism",
+  describe: "Package install without a cache mechanism, measured slow enough to be worth one",
   check(ctx) {
     const findings = [];
     for (const [jobId, job] of ctx.workflow.jobs) {
@@ -7443,15 +7443,15 @@ var installNoCache = {
         const label = ECOSYSTEM_LABELS[eco];
         findings.push({
           rule: "install-no-cache",
-          severity: "low",
-          tier: "static",
+          severity: "medium",
+          tier: "audit",
           workflow: ctx.workflow.path,
           job: jobId,
           step: firstStep.index,
           location: firstStep.line ? { line: firstStep.line } : undefined,
           message: `Job "${job.name ?? jobId}" installs ${label} packages without a cache mechanism`,
-          evidence: `${label} install detected but no matching cache action or configuration found; install duration unmeasured`,
-          remediation: `Measure before caching: run the audit tier (--audit, or the action's audit: true) to see this install's median duration. A cache restore costs 2-4s per job, so caching only pays for installs of roughly 10s or more. If it qualifies: ${cacheRemediation(eco)}`,
+          evidence: `${label} install detected but no matching cache action or configuration found`,
+          remediation: cacheRemediation(eco),
           meta: { ecosystem: eco }
         });
       }
@@ -7518,8 +7518,6 @@ function measureInstallSteps(auditData, job, eco) {
   return measured;
 }
 function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
-  if (!auditDataByWorkflow || auditDataByWorkflow.size === 0)
-    return findings;
   const result = [];
   const setupDominatedJobs = new Set;
   for (const f of findings) {
@@ -7536,11 +7534,18 @@ function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
       continue;
     const wf = workflows.find((w) => w.path === f.workflow);
     const job = wf?.jobs.get(f.job);
-    const auditData = auditDataByWorkflow.get(f.workflow);
+    const auditData = auditDataByWorkflow?.get(f.workflow);
     const eco = f.meta?.ecosystem;
     const measured = job && auditData && eco ? measureInstallSteps(auditData, job, eco) : [];
     if (measured.length === 0 || !eco) {
-      result.push(f);
+      if (pedantic) {
+        result.push({
+          ...f,
+          severity: "info",
+          evidence: `${f.evidence}; no sampled run contains this step, so its duration is unmeasured`,
+          remediation: `Nothing to do until it measures. A cache restore costs 2-4s per job, so caching only pays for installs of roughly ${INSTALL_CACHE_WORTH_MS / 1000}s or more.`
+        });
+      }
       continue;
     }
     const summary = measured.map((m) => `${m.name}: ${fmtMinutes(m.medianMs)} median over ${m.samples} run${m.samples === 1 ? "" : "s"}`).join(", ");
@@ -7549,7 +7554,8 @@ function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
         result.push({
           ...f,
           severity: "info",
-          evidence: `Measured: ${summary} — under the ${INSTALL_CACHE_WORTH_MS / 1000}s payback floor, a cache would save nothing`
+          evidence: `Measured: ${summary} — under the ${INSTALL_CACHE_WORTH_MS / 1000}s payback floor, a cache would save nothing`,
+          remediation: "Nothing to do; the install is already faster than a cache restore."
         });
       }
       continue;
@@ -9573,7 +9579,7 @@ function formatJson(findings) {
 // package.json
 var package_default = {
   name: "ci-bottlenecks",
-  version: "0.1.4",
+  version: "0.1.5",
   description: "Find performance problems in GitHub Actions pipelines",
   type: "module",
   main: "dist/index.js",
