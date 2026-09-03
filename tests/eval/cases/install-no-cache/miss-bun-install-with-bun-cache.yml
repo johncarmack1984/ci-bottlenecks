@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=miss
-# why: bun install with actions/cache targeting ~/.bun/install/cache should be recognized as cached — the BUN_CACHE_PATHS regex (/\.bun\/install\/cache/) matches this path, so the rule correctly treats it as cached
+# eval: rule=install-no-cache expect=silent kind=miss pedantic=true
+# why: bun install with actions/cache targeting ~/.bun/install/cache should be recognized as cached — the BUN_CACHE_PATHS regex (/\.bun\/install\/cache/) matches this path, so the rule correctly treats it as cached (unmeasured detection: pedantic-only info trace)
 # source: rule spec — BUN_CACHE_PATHS regex coverage for bun dependency cache directory
 name: bun install with actions/cache for bun deps
 on: workflow_dispatch

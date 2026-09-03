@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: actions/cache with an expression-based path (${{ env.STORE_PATH }}) is opaque — the rule treats it as potentially caching anything, so pnpm install is considered covered
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: actions/cache with an expression-based path (${{ env.STORE_PATH }}) is opaque — the rule treats it as potentially caching anything, so pnpm install is considered covered (unmeasured detection: pedantic-only info trace)
 # source: rule spec — expression paths treated as caching all ecosystems
 name: pnpm install with expression cache path
 on: workflow_dispatch

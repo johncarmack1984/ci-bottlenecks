@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: npm install -g is a global tool install, not a project dependency install — excluded by the regex
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: npm install -g is a global tool install, not a project dependency install — excluded by the regex (unmeasured detection: pedantic-only info trace)
 # source: rule spec — global installs are not dependency installs
 name: npm install -g global tool
 on: workflow_dispatch

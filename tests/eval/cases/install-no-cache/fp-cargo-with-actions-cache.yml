@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: actions/cache targeting ~/.cargo paths provides Rust dependency caching — cargo build is covered
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: actions/cache targeting ~/.cargo paths provides Rust dependency caching — cargo build is covered (unmeasured detection: pedantic-only info trace)
 # source: rule spec — actions/cache with Rust-matching paths counts as a cache provider
 name: cargo build with actions/cache for cargo
 on: workflow_dispatch

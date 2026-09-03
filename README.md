@@ -76,7 +76,6 @@ These run against your workflow YAML files with no API access required. Each rul
 | `no-concurrency` | medium | Workflow triggered on push/PR with no concurrency + cancel-in-progress |
 | `cache-key-no-hash` | high/low | Cache key without `hashFiles` or dynamic component; missing `restore-keys` (low) |
 | `double-cache` | medium | Redundant cache mechanisms in the same job |
-| `install-no-cache` | low / medium | Package install without a cache mechanism (`low` until `--audit` measures the install; see below) |
 | `unneeded-full-checkout` | low | Full git history checkout without steps needing it |
 | `macos-not-needed` | medium | macOS runner used without macOS-specific work |
 | `false-serialization` | medium | Job depends on another but consumes nothing from it |
@@ -84,8 +83,6 @@ These run against your workflow YAML files with no API access required. Each rul
 | `no-path-filter` | low (pedantic) | Push/PR workflow without path filters |
 | `matrix-max-parallel` | low (pedantic) | `max-parallel` limits matrix concurrency without obvious reason |
 | `unpinned-action` | info | Action uses mutable ref (`@main`, `@master`, or no ref) |
-
-`install-no-cache` is the one static rule with a measured gate. Statically it is a `low` hint: the YAML shows an install without a cache, but not how long the install takes, and an `actions/cache` restore and save costs 2–4s per job on its own. With `--audit` the rule measures the flagged job's install steps for that ecosystem, matched to the sampled runs by GitHub's step display name: a median of 10s or more promotes the finding to `medium` with the measured duration as evidence, and a median under 10s drops it (`--pedantic` keeps an `info` trace). Only steps present in the workflow being linted are measured, so a step deleted since the runs happened cannot keep a finding alive, and a step the runs do not contain (renamed, or no runs yet) leaves the static hint in place.
 
 ### Audit rules
 
@@ -98,6 +95,9 @@ These require `--audit` and pull measured run data from the GitHub API.
 | `queue-dominated` | medium | Jobs spend more time queued than running |
 | `setup-dominated` | medium | Setup steps consume most of job time |
 | `double-run-measured` | high | Two runs of the same workflow on the same SHA within 5 minutes |
+| `install-no-cache` | medium | Package install without a cache mechanism, measured at 10s or more (see below) |
+
+`install-no-cache` detects the install statically but only reports it once measured. The YAML shows whether an install has a cache, not whether a cache would pay: an `actions/cache` restore and save costs 2–4s per job on its own, and many installs finish in one. With `--audit` the rule measures the flagged job's install steps for that ecosystem, matched to the sampled runs by GitHub's step display name: a median of 10s or more reports at `medium` with the measured duration as evidence, and anything under is dropped. Only steps present in the workflow being linted are measured, so a step deleted since the runs happened cannot keep a finding alive; a step the runs do not contain (renamed, or no runs yet) is unmeasured and also dropped. `--pedantic` shows dropped detections as `info` traces.
 
 ## Suppression
 

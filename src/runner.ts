@@ -103,8 +103,6 @@ function measureInstallSteps(
 }
 
 function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDataByWorkflow?: Map<string, WorkflowAuditData>, pedantic?: boolean): Finding[] {
-  if (!auditDataByWorkflow || auditDataByWorkflow.size === 0) return findings;
-
   const result: Finding[] = [];
   const setupDominatedJobs = new Set<string>();
 
@@ -125,14 +123,22 @@ function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDa
 
     const wf = workflows.find((w) => w.path === f.workflow);
     const job = wf?.jobs.get(f.job);
-    const auditData = auditDataByWorkflow.get(f.workflow);
+    const auditData = auditDataByWorkflow?.get(f.workflow);
     const eco = f.meta?.ecosystem as Ecosystem | undefined;
     const measured = job && auditData && eco ? measureInstallSteps(auditData, job, eco) : [];
 
-    // Unmeasured (no runs yet, or the step was renamed since): the static hint
-    // stands as written, at its static severity.
+    // Unmeasured (no sampled run contains the step: no runs yet, or it was
+    // renamed since). The detector saw an install without a cache, but has no
+    // idea whether a cache would pay, so it says nothing unless asked.
     if (measured.length === 0 || !eco) {
-      result.push(f);
+      if (pedantic) {
+        result.push({
+          ...f,
+          severity: "info",
+          evidence: `${f.evidence}; no sampled run contains this step, so its duration is unmeasured`,
+          remediation: `Nothing to do until it measures. A cache restore costs 2-4s per job, so caching only pays for installs of roughly ${INSTALL_CACHE_WORTH_MS / 1000}s or more.`,
+        });
+      }
       continue;
     }
 
@@ -146,6 +152,7 @@ function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDa
           ...f,
           severity: "info",
           evidence: `Measured: ${summary} — under the ${INSTALL_CACHE_WORTH_MS / 1000}s payback floor, a cache would save nothing`,
+          remediation: "Nothing to do; the install is already faster than a cache restore.",
         });
       }
       continue;

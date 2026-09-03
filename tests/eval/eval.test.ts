@@ -118,7 +118,7 @@ function runCase(evalCase: EvalCase): Finding[] {
 
   const hasPedantic = evalCase.manifests.some((m) => m.pedantic);
   const isAudit = evalCase.manifests.some(
-    (m) => ["critical-path", "flaky-or-hanging", "queue-dominated", "setup-dominated", "double-run-measured"].includes(m.rule),
+    (m) => ["critical-path", "flaky-or-hanging", "queue-dominated", "setup-dominated", "double-run-measured", "install-no-cache"].includes(m.rule),
   );
 
   const allWorkflows: ParsedWorkflow[] = [wf];

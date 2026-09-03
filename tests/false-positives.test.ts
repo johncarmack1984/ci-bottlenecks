@@ -4,11 +4,11 @@ import { runRules } from "../src/runner.ts";
 import { allRules } from "../src/rules/index.ts";
 import type { Finding, ParsedWorkflow } from "../src/types.ts";
 
-function check(yaml: string, opts?: { pedantic?: boolean; allWorkflows?: ParsedWorkflow[] }): Finding[] {
+function check(yaml: string, opts?: { audit?: boolean; pedantic?: boolean; allWorkflows?: ParsedWorkflow[] }): Finding[] {
   const wf = parseWorkflow("test.yml", yaml);
   if (!wf) throw new Error("Failed to parse YAML");
   return runRules(allRules, opts?.allWorkflows ?? [wf], {
-    audit: false,
+    audit: opts?.audit ?? false,
     pedantic: opts?.pedantic ?? false,
   }).filter((f) => f.workflow === "test.yml");
 }
@@ -698,7 +698,7 @@ jobs:
           key: pnpm-\${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-
       - run: pnpm install
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 });
@@ -715,7 +715,7 @@ jobs:
     steps:
       - uses: ./.github/actions/setup-node
       - run: npm ci
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 });
@@ -732,7 +732,7 @@ jobs:
     steps:
       - uses: moonrepo/setup-rust@v1
       - run: cargo build
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 });
@@ -748,7 +748,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - run: npm install -g vercel
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 });

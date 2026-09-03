@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: moonrepo/setup-rust caches by default (unless cache: false) — cargo build is covered
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: moonrepo/setup-rust caches by default (unless cache: false) — cargo build is covered (unmeasured detection: pedantic-only info trace)
 # source: rule spec — moonrepo/setup-rust is a recognized cache provider for Rust
 name: cargo build with moonrepo/setup-rust
 on: workflow_dispatch
