@@ -1,0 +1,14 @@
+# eval: rule=install-no-cache expect=fire kind=tp jobs=build count=1
+# why: the sampled runs name the install step differently from the current YAML, so it is unmeasured — the static hint stays rather than being silently dropped
+# source: synthetic; a workflow edit that renames the install step between the runs and the lint
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+      - run: npm test

@@ -1,0 +1,17 @@
+# eval: rule=install-no-cache expect=fire kind=tp jobs=build count=1
+# why: a job with a 40s npm ci and a 1s bun install gets exactly one finding — the gate measures each ecosystem's own install step, so the slow npm install fires and the fast bun install does not
+# source: synthetic; the previous gate pooled every install-named step per job, so a slow install kept a fast one's finding alive
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install web dependencies
+        run: npm ci
+      - name: Install tooling
+        run: bun install --frozen-lockfile
+      - run: npm test

@@ -14,6 +14,8 @@ export interface Finding {
   patch?: string;
   estimatedSavings?: { minutesPerRun?: number; confidence: "exact" | "estimate" };
   pedantic?: boolean;
+  /** Rule-specific facts consumed by cross-tier gating; formatters never render them. */
+  meta?: Record<string, string>;
 }
 
 export interface Rule {
