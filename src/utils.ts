@@ -24,3 +24,21 @@ export function fmtMinutes(ms: number): string {
   const m = ms / 60_000;
   return m < 1 ? `${(ms / 1000).toFixed(0)}s` : `${m.toFixed(1)}m`;
 }
+
+import type { ParsedStep } from "./types.ts";
+
+/**
+ * The name GitHub gives a step in the Actions API and the run log: the
+ * explicit `name:`, else `Run <uses>` for an action, else `Run <first line
+ * of run>` for a script. Audit-tier code matches measured steps to the YAML
+ * by this string, so it has to follow GitHub's convention exactly.
+ */
+export function stepDisplayName(step: ParsedStep): string | null {
+  if (step.name) return step.name;
+  if (step.uses) return `Run ${step.uses.trim()}`;
+  if (step.run) {
+    const first = step.run.split("\n").find((l) => l.trim().length > 0);
+    return first ? `Run ${first.trim()}` : null;
+  }
+  return null;
+}

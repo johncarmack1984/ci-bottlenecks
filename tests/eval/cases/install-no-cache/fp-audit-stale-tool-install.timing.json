@@ -1,0 +1,628 @@
+{
+  "runs": [
+    {
+      "id": 1001,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-21T12:00:00Z",
+      "runStartedAt": "2026-08-21T12:00:05Z",
+      "updatedAt": "2026-08-21T12:01:10Z",
+      "jobs": [
+        {
+          "id": 2001,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-21T12:00:05Z",
+          "startedAt": "2026-08-21T12:00:10Z",
+          "completedAt": "2026-08-21T12:01:05Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:10Z",
+              "completedAt": "2026-08-21T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:11Z",
+              "completedAt": "2026-08-21T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:12Z",
+              "completedAt": "2026-08-21T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:14Z",
+              "completedAt": "2026-08-21T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:15Z",
+              "completedAt": "2026-08-21T12:00:16Z"
+            },
+            {
+              "name": "Run cargo install cargo-machete",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:16Z",
+              "completedAt": "2026-08-21T12:00:58Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:58Z",
+              "completedAt": "2026-08-21T12:01:02Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:01:02Z",
+              "completedAt": "2026-08-21T12:01:05Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:01:05Z",
+              "completedAt": "2026-08-21T12:01:05Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:01:05Z",
+              "completedAt": "2026-08-21T12:01:05Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-22T12:00:00Z",
+      "runStartedAt": "2026-08-22T12:00:05Z",
+      "updatedAt": "2026-08-22T12:01:10Z",
+      "jobs": [
+        {
+          "id": 2002,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-22T12:00:05Z",
+          "startedAt": "2026-08-22T12:00:10Z",
+          "completedAt": "2026-08-22T12:01:05Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:10Z",
+              "completedAt": "2026-08-22T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:11Z",
+              "completedAt": "2026-08-22T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:12Z",
+              "completedAt": "2026-08-22T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:14Z",
+              "completedAt": "2026-08-22T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:15Z",
+              "completedAt": "2026-08-22T12:00:16Z"
+            },
+            {
+              "name": "Run cargo install cargo-machete",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:16Z",
+              "completedAt": "2026-08-22T12:00:58Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:58Z",
+              "completedAt": "2026-08-22T12:01:02Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:01:02Z",
+              "completedAt": "2026-08-22T12:01:05Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:01:05Z",
+              "completedAt": "2026-08-22T12:01:05Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:01:05Z",
+              "completedAt": "2026-08-22T12:01:05Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-23T12:00:00Z",
+      "runStartedAt": "2026-08-23T12:00:05Z",
+      "updatedAt": "2026-08-23T12:01:11Z",
+      "jobs": [
+        {
+          "id": 2003,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-23T12:00:05Z",
+          "startedAt": "2026-08-23T12:00:10Z",
+          "completedAt": "2026-08-23T12:01:06Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:10Z",
+              "completedAt": "2026-08-23T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:11Z",
+              "completedAt": "2026-08-23T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:12Z",
+              "completedAt": "2026-08-23T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:14Z",
+              "completedAt": "2026-08-23T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:15Z",
+              "completedAt": "2026-08-23T12:00:17Z"
+            },
+            {
+              "name": "Run cargo install cargo-machete",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:17Z",
+              "completedAt": "2026-08-23T12:00:59Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:59Z",
+              "completedAt": "2026-08-23T12:01:03Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:01:03Z",
+              "completedAt": "2026-08-23T12:01:06Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:01:06Z",
+              "completedAt": "2026-08-23T12:01:06Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:01:06Z",
+              "completedAt": "2026-08-23T12:01:06Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1004,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-28T12:00:00Z",
+      "runStartedAt": "2026-08-28T12:00:05Z",
+      "updatedAt": "2026-08-28T12:00:29Z",
+      "jobs": [
+        {
+          "id": 2004,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-28T12:00:05Z",
+          "startedAt": "2026-08-28T12:00:10Z",
+          "completedAt": "2026-08-28T12:00:24Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:10Z",
+              "completedAt": "2026-08-28T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:11Z",
+              "completedAt": "2026-08-28T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:12Z",
+              "completedAt": "2026-08-28T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:14Z",
+              "completedAt": "2026-08-28T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:15Z",
+              "completedAt": "2026-08-28T12:00:16Z"
+            },
+            {
+              "name": "Run taiki-e/install-action@v2",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:16Z",
+              "completedAt": "2026-08-28T12:00:17Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:17Z",
+              "completedAt": "2026-08-28T12:00:21Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:21Z",
+              "completedAt": "2026-08-28T12:00:24Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:24Z",
+              "completedAt": "2026-08-28T12:00:24Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-28T12:00:24Z",
+              "completedAt": "2026-08-28T12:00:24Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1005,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-29T12:00:00Z",
+      "runStartedAt": "2026-08-29T12:00:05Z",
+      "updatedAt": "2026-08-29T12:00:29Z",
+      "jobs": [
+        {
+          "id": 2005,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-29T12:00:05Z",
+          "startedAt": "2026-08-29T12:00:10Z",
+          "completedAt": "2026-08-29T12:00:24Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:10Z",
+              "completedAt": "2026-08-29T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:11Z",
+              "completedAt": "2026-08-29T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:12Z",
+              "completedAt": "2026-08-29T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:14Z",
+              "completedAt": "2026-08-29T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:15Z",
+              "completedAt": "2026-08-29T12:00:16Z"
+            },
+            {
+              "name": "Run taiki-e/install-action@v2",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:16Z",
+              "completedAt": "2026-08-29T12:00:17Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:17Z",
+              "completedAt": "2026-08-29T12:00:21Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:21Z",
+              "completedAt": "2026-08-29T12:00:24Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:24Z",
+              "completedAt": "2026-08-29T12:00:24Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-29T12:00:24Z",
+              "completedAt": "2026-08-29T12:00:24Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1006,
+      "name": "desktop",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-30T12:00:00Z",
+      "runStartedAt": "2026-08-30T12:00:05Z",
+      "updatedAt": "2026-08-30T12:00:29Z",
+      "jobs": [
+        {
+          "id": 2006,
+          "name": "unused-deps",
+          "conclusion": "success",
+          "createdAt": "2026-08-30T12:00:05Z",
+          "startedAt": "2026-08-30T12:00:10Z",
+          "completedAt": "2026-08-30T12:00:24Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:10Z",
+              "completedAt": "2026-08-30T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:11Z",
+              "completedAt": "2026-08-30T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:12Z",
+              "completedAt": "2026-08-30T12:00:14Z"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:14Z",
+              "completedAt": "2026-08-30T12:00:15Z"
+            },
+            {
+              "name": "Run bun install --frozen-lockfile",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:15Z",
+              "completedAt": "2026-08-30T12:00:16Z"
+            },
+            {
+              "name": "Run taiki-e/install-action@v2",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:16Z",
+              "completedAt": "2026-08-30T12:00:17Z"
+            },
+            {
+              "name": "Unused JS dependencies (knip)",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:17Z",
+              "completedAt": "2026-08-30T12:00:21Z"
+            },
+            {
+              "name": "Unused Rust dependencies (cargo-machete)",
+              "number": 8,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:21Z",
+              "completedAt": "2026-08-30T12:00:24Z"
+            },
+            {
+              "name": "Post Run oven-sh/setup-bun@v2",
+              "number": 9,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:24Z",
+              "completedAt": "2026-08-30T12:00:24Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 10,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-30T12:00:24Z",
+              "completedAt": "2026-08-30T12:00:24Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

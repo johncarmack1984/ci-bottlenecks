@@ -1,0 +1,14 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: an install measured at 7s is under the 10s payback floor — actions/cache restore + save costs 2-4s per job, so caching it is a wash at best
+# source: lux desktop.yml bun jobs, 2026-09-02 — adding actions/cache to 1s installs made each job 2-3s slower
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+      - run: npm test

@@ -2,10 +2,16 @@ import type {
   Finding,
   Rule,
   RuleContext,
+  ParsedJob,
   ParsedWorkflow,
   WorkflowAuditData,
 } from "./types.ts";
-import { durationMs, median } from "./utils.ts";
+import { durationMs, fmtMinutes, median, stepDisplayName } from "./utils.ts";
+import {
+  cacheRemediation,
+  installStepsFor,
+  type Ecosystem,
+} from "./rules/install-no-cache.ts";
 
 function isSuppressed(
   finding: Finding,
@@ -44,34 +50,56 @@ export interface RunOptions {
   auditDataByWorkflow?: Map<string, WorkflowAuditData>;
 }
 
-function getInstallStepMedians(auditData: WorkflowAuditData, jobId: string, workflow: ParsedWorkflow): Map<string, number> {
-  const job = workflow.jobs.get(jobId);
-  if (!job) return new Map();
+// A dependency cache only pays for itself when the install it shortcuts is
+// slower than the restore + save round trip. actions/cache measured 2-4s per
+// job for a bun cache on ubuntu-latest (lux, 2026-09-02); 10s leaves a margin
+// so a finding never asks for a cache that is a wash at best.
+export const INSTALL_CACHE_WORTH_MS = 10_000;
 
-  const jobName = job.name ?? jobId;
-  const stepDurations = new Map<string, number[]>();
+interface MeasuredStep {
+  name: string;
+  medianMs: number;
+  samples: number;
+}
 
+/**
+ * Median duration of each of the job's install steps for `eco`, matched to
+ * the sampled runs by GitHub's step display name. Only steps present in the
+ * YAML being linted are measured, so a step deleted since the runs happened
+ * (a `cargo install` replaced by a prebuilt binary, say) cannot keep a finding
+ * alive, and a job's tool installs never stand in for its dependency install.
+ */
+function measureInstallSteps(
+  auditData: WorkflowAuditData,
+  job: ParsedJob,
+  eco: Ecosystem,
+): MeasuredStep[] {
+  const targets = new Map<string, number[]>();
+  for (const step of installStepsFor(job.steps, eco)) {
+    const name = stepDisplayName(step);
+    if (name && !targets.has(name)) targets.set(name, []);
+  }
+  if (targets.size === 0) return [];
+
+  const jobName = job.name ?? job.id;
   for (const run of auditData.runs) {
     for (const j of run.jobs) {
       if (j.name !== jobName && !j.name.startsWith(`${jobName} (`)) continue;
       for (const step of j.steps) {
-        if (/\b(install|npm ci)\b/i.test(step.name)) {
-          const d = durationMs(step.startedAt, step.completedAt);
-          if (d != null) {
-            const arr = stepDurations.get(step.name) ?? [];
-            arr.push(d);
-            stepDurations.set(step.name, arr);
-          }
-        }
+        const samples = targets.get(step.name);
+        if (!samples || step.conclusion !== "success") continue;
+        const d = durationMs(step.startedAt, step.completedAt);
+        if (d != null) samples.push(d);
       }
     }
   }
 
-  const result = new Map<string, number>();
-  for (const [name, durations] of stepDurations) {
-    result.set(name, median(durations));
+  const measured: MeasuredStep[] = [];
+  for (const [name, samples] of targets) {
+    if (samples.length === 0) continue;
+    measured.push({ name, medianMs: median(samples), samples: samples.length });
   }
-  return result;
+  return measured;
 }
 
 function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDataByWorkflow?: Map<string, WorkflowAuditData>, pedantic?: boolean): Finding[] {
@@ -87,31 +115,50 @@ function crossTierGate(findings: Finding[], workflows: ParsedWorkflow[], auditDa
   }
 
   for (const f of findings) {
-    if (f.rule === "install-no-cache" && f.job) {
-      const key = `${f.workflow}:${f.job}`;
-      if (setupDominatedJobs.has(key)) continue;
-
-      const wf = workflows.find((w) => w.path === f.workflow);
-      if (wf) {
-        const auditData = auditDataByWorkflow.get(f.workflow);
-        if (auditData) {
-          const stepMedians = getInstallStepMedians(auditData, f.job, wf);
-          const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5_000);
-          if (allUnder5s) {
-            if (pedantic) {
-              const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
-              result.push({
-                ...f,
-                severity: "info",
-                evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`,
-              });
-            }
-            continue;
-          }
-        }
-      }
+    if (f.rule !== "install-no-cache" || !f.job) {
+      result.push(f);
+      continue;
     }
-    result.push(f);
+
+    // setup-dominated already names this job's slow setup steps, install included.
+    if (setupDominatedJobs.has(`${f.workflow}:${f.job}`)) continue;
+
+    const wf = workflows.find((w) => w.path === f.workflow);
+    const job = wf?.jobs.get(f.job);
+    const auditData = auditDataByWorkflow.get(f.workflow);
+    const eco = f.meta?.ecosystem as Ecosystem | undefined;
+    const measured = job && auditData && eco ? measureInstallSteps(auditData, job, eco) : [];
+
+    // Unmeasured (no runs yet, or the step was renamed since): the static hint
+    // stands as written, at its static severity.
+    if (measured.length === 0 || !eco) {
+      result.push(f);
+      continue;
+    }
+
+    const summary = measured
+      .map((m) => `${m.name}: ${fmtMinutes(m.medianMs)} median over ${m.samples} run${m.samples === 1 ? "" : "s"}`)
+      .join(", ");
+
+    if (measured.every((m) => m.medianMs < INSTALL_CACHE_WORTH_MS)) {
+      if (pedantic) {
+        result.push({
+          ...f,
+          severity: "info",
+          evidence: `Measured: ${summary} — under the ${INSTALL_CACHE_WORTH_MS / 1000}s payback floor, a cache would save nothing`,
+        });
+      }
+      continue;
+    }
+
+    const totalMs = measured.reduce((sum, m) => sum + m.medianMs, 0);
+    result.push({
+      ...f,
+      severity: "medium",
+      evidence: `Measured: ${summary}. No matching cache action or configuration found`,
+      remediation: cacheRemediation(eco),
+      estimatedSavings: { minutesPerRun: Math.round((totalMs / 60_000) * 10) / 10, confidence: "estimate" },
+    });
   }
 
   return result;

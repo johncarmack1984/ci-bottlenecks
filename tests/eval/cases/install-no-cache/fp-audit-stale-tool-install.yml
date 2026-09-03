@@ -1,0 +1,21 @@
+# eval: rule=install-no-cache expect=silent kind=fp
+# why: the job's own bun install measures 1s; a 42s "cargo install" step that only exists in runs from before the workflow changed must not keep the finding alive
+# source: lux desktop.yml unused-deps, audited 2026-09-02 — real step names and durations, trimmed to one job
+name: desktop
+on: push
+jobs:
+  unused-deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - run: bun install --frozen-lockfile
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete
+      - name: Unused JS dependencies (knip)
+        run: bunx knip --dependencies
+      - name: Unused Rust dependencies (cargo-machete)
+        run: cargo machete

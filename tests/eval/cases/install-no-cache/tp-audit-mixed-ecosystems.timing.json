@@ -1,0 +1,244 @@
+{
+  "runs": [
+    {
+      "id": 1001,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-21T12:00:00Z",
+      "runStartedAt": "2026-08-21T12:00:05Z",
+      "updatedAt": "2026-08-21T12:01:28Z",
+      "jobs": [
+        {
+          "id": 2001,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-08-21T12:00:05Z",
+          "startedAt": "2026-08-21T12:00:10Z",
+          "completedAt": "2026-08-21T12:01:23Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:10Z",
+              "completedAt": "2026-08-21T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:11Z",
+              "completedAt": "2026-08-21T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:12Z",
+              "completedAt": "2026-08-21T12:00:14Z"
+            },
+            {
+              "name": "Install web dependencies",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:14Z",
+              "completedAt": "2026-08-21T12:00:52Z"
+            },
+            {
+              "name": "Install tooling",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:52Z",
+              "completedAt": "2026-08-21T12:00:53Z"
+            },
+            {
+              "name": "Run npm test",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:00:53Z",
+              "completedAt": "2026-08-21T12:01:23Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-21T12:01:23Z",
+              "completedAt": "2026-08-21T12:01:23Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-22T12:00:00Z",
+      "runStartedAt": "2026-08-22T12:00:05Z",
+      "updatedAt": "2026-08-22T12:01:30Z",
+      "jobs": [
+        {
+          "id": 2002,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-08-22T12:00:05Z",
+          "startedAt": "2026-08-22T12:00:10Z",
+          "completedAt": "2026-08-22T12:01:25Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:10Z",
+              "completedAt": "2026-08-22T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:11Z",
+              "completedAt": "2026-08-22T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:12Z",
+              "completedAt": "2026-08-22T12:00:14Z"
+            },
+            {
+              "name": "Install web dependencies",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:14Z",
+              "completedAt": "2026-08-22T12:00:54Z"
+            },
+            {
+              "name": "Install tooling",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:54Z",
+              "completedAt": "2026-08-22T12:00:55Z"
+            },
+            {
+              "name": "Run npm test",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:00:55Z",
+              "completedAt": "2026-08-22T12:01:25Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-22T12:01:25Z",
+              "completedAt": "2026-08-22T12:01:25Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "name": "CI",
+      "workflowId": 100,
+      "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "event": "push",
+      "conclusion": "success",
+      "createdAt": "2026-08-23T12:00:00Z",
+      "runStartedAt": "2026-08-23T12:00:05Z",
+      "updatedAt": "2026-08-23T12:01:35Z",
+      "jobs": [
+        {
+          "id": 2003,
+          "name": "build",
+          "conclusion": "success",
+          "createdAt": "2026-08-23T12:00:05Z",
+          "startedAt": "2026-08-23T12:00:10Z",
+          "completedAt": "2026-08-23T12:01:30Z",
+          "runnerLabel": "ubuntu-latest",
+          "steps": [
+            {
+              "name": "Set up job",
+              "number": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:10Z",
+              "completedAt": "2026-08-23T12:00:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:11Z",
+              "completedAt": "2026-08-23T12:00:12Z"
+            },
+            {
+              "name": "Run oven-sh/setup-bun@v2",
+              "number": 3,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:12Z",
+              "completedAt": "2026-08-23T12:00:14Z"
+            },
+            {
+              "name": "Install web dependencies",
+              "number": 4,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:14Z",
+              "completedAt": "2026-08-23T12:00:58Z"
+            },
+            {
+              "name": "Install tooling",
+              "number": 5,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:00:58Z",
+              "completedAt": "2026-08-23T12:01:00Z"
+            },
+            {
+              "name": "Run npm test",
+              "number": 6,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:01:00Z",
+              "completedAt": "2026-08-23T12:01:30Z"
+            },
+            {
+              "name": "Complete job",
+              "number": 7,
+              "status": "completed",
+              "conclusion": "success",
+              "startedAt": "2026-08-23T12:01:30Z",
+              "completedAt": "2026-08-23T12:01:30Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
