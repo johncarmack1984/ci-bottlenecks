@@ -7313,6 +7313,152 @@ function fmtMinutes(ms) {
   const m = ms / 60000;
   return m < 1 ? `${(ms / 1000).toFixed(0)}s` : `${m.toFixed(1)}m`;
 }
+function stepDisplayName(step) {
+  if (step.name)
+    return step.name;
+  if (step.uses)
+    return `Run ${step.uses.trim()}`;
+  if (step.run) {
+    const first = step.run.split(`
+`).find((l) => l.trim().length > 0);
+    return first ? `Run ${first.trim()}` : null;
+  }
+  return null;
+}
+
+// src/rules/install-no-cache.ts
+var INSTALL_PATTERNS = [
+  { pattern: /\bnpm\s+(ci|install)\b(?!\s+-g)/, ecosystem: "node" },
+  { pattern: /\bpnpm\s+install\b/, ecosystem: "node" },
+  { pattern: /\byarn\s+install\b/, ecosystem: "node" },
+  { pattern: /\bbun\s+install\b/, ecosystem: "bun" },
+  { pattern: /\bpip\s+install\b/, ecosystem: "python" },
+  { pattern: /\bcargo\s+(build|test)\b/, ecosystem: "rust" }
+];
+var NODE_CACHE_PATHS = /node_modules|\.npm|\.pnpm-store|\.yarn/;
+var PIP_CACHE_PATHS = /pip|\.cache\/pip/;
+var RUST_CACHE_PATHS = /\.cargo|target\//;
+var BUN_CACHE_PATHS = /\.bun\/install\/cache/;
+var ECOSYSTEM_LABELS = {
+  node: "Node.js (npm/pnpm/yarn)",
+  bun: "Bun",
+  python: "Python (pip)",
+  rust: "Rust (cargo)"
+};
+function installEcosystemsOf(step) {
+  if (!step.run)
+    return [];
+  const out = [];
+  for (const { pattern, ecosystem } of INSTALL_PATTERNS) {
+    if (pattern.test(step.run) && !out.includes(ecosystem))
+      out.push(ecosystem);
+  }
+  return out;
+}
+function installStepsFor(steps, eco) {
+  return steps.filter((s) => installEcosystemsOf(s).includes(eco));
+}
+function cacheRemediation(eco) {
+  return `Add a cache mechanism for ${ECOSYSTEM_LABELS[eco]} dependencies (e.g. setup-node with cache input, actions/cache, or an ecosystem-specific cache action).`;
+}
+function stepKey(step) {
+  if (!step.uses)
+    return null;
+  const ref = parseActionRef(step.uses);
+  return { key: ref.key, isLocal: ref.isLocal };
+}
+function detectCachedEcosystems(steps) {
+  const cached = new Set;
+  for (const step of steps) {
+    const ref = stepKey(step);
+    if (!ref)
+      continue;
+    if (ref.isLocal) {
+      cached.add("node");
+      cached.add("python");
+      cached.add("rust");
+      cached.add("bun");
+      continue;
+    }
+    const { key } = ref;
+    if (key === "actions/setup-node" && step.with?.cache)
+      cached.add("node");
+    if (key === "actions/setup-python" && step.with?.cache)
+      cached.add("python");
+    if (key === "Swatinem/rust-cache")
+      cached.add("rust");
+    if (key === "mozilla-actions/sccache-action")
+      cached.add("rust");
+    if (key === "moonrepo/setup-rust") {
+      const cacheOpt = step.with?.cache;
+      if (cacheOpt !== false && cacheOpt !== "false")
+        cached.add("rust");
+    }
+    if (key === "astral-sh/setup-uv")
+      cached.add("python");
+    if (key === "pdm-project/setup-pdm")
+      cached.add("python");
+    if (key === "actions/cache" || key === "actions/cache/restore") {
+      const paths = typeof step.with?.path === "string" ? step.with.path : "";
+      if (paths.includes("${{")) {
+        cached.add("node");
+        cached.add("python");
+        cached.add("rust");
+        cached.add("bun");
+        continue;
+      }
+      if (NODE_CACHE_PATHS.test(paths))
+        cached.add("node");
+      if (PIP_CACHE_PATHS.test(paths))
+        cached.add("python");
+      if (RUST_CACHE_PATHS.test(paths))
+        cached.add("rust");
+      if (BUN_CACHE_PATHS.test(paths))
+        cached.add("bun");
+    }
+  }
+  return cached;
+}
+var installNoCache = {
+  id: "install-no-cache",
+  tier: "static",
+  severity: "medium",
+  describe: "Package install without a cache mechanism",
+  check(ctx) {
+    const findings = [];
+    for (const [jobId, job] of ctx.workflow.jobs) {
+      const installed = new Map;
+      for (const step of job.steps) {
+        for (const eco of installEcosystemsOf(step)) {
+          if (!installed.has(eco))
+            installed.set(eco, step);
+        }
+      }
+      if (installed.size === 0)
+        continue;
+      const cached = detectCachedEcosystems(job.steps);
+      for (const [eco, firstStep] of installed) {
+        if (cached.has(eco))
+          continue;
+        const label = ECOSYSTEM_LABELS[eco];
+        findings.push({
+          rule: "install-no-cache",
+          severity: "low",
+          tier: "static",
+          workflow: ctx.workflow.path,
+          job: jobId,
+          step: firstStep.index,
+          location: firstStep.line ? { line: firstStep.line } : undefined,
+          message: `Job "${job.name ?? jobId}" installs ${label} packages without a cache mechanism`,
+          evidence: `${label} install detected but no matching cache action or configuration found; install duration unmeasured`,
+          remediation: `Measure before caching: run the audit tier (--audit, or the action's audit: true) to see this install's median duration. A cache restore costs 2-4s per job, so caching only pays for installs of roughly 10s or more. If it qualifies: ${cacheRemediation(eco)}`,
+          meta: { ecosystem: eco }
+        });
+      }
+    }
+    return findings;
+  }
+};
 
 // src/runner.ts
 function isSuppressed(finding, workflow) {
@@ -7329,8 +7475,8 @@ function isSuppressed(finding, workflow) {
       return true;
   }
   if (finding.job && finding.step != null) {
-    const stepKey = `${finding.job}:${finding.step}`;
-    const stepSup = sup.steps.get(stepKey);
+    const stepKey2 = `${finding.job}:${finding.step}`;
+    const stepSup = sup.steps.get(stepKey2);
     if (stepSup === "all")
       return true;
     if (Array.isArray(stepSup) && stepSup.includes(finding.rule))
@@ -7338,33 +7484,38 @@ function isSuppressed(finding, workflow) {
   }
   return false;
 }
-function getInstallStepMedians(auditData, jobId, workflow) {
-  const job = workflow.jobs.get(jobId);
-  if (!job)
-    return new Map;
-  const jobName = job.name ?? jobId;
-  const stepDurations = new Map;
+var INSTALL_CACHE_WORTH_MS = 1e4;
+function measureInstallSteps(auditData, job, eco) {
+  const targets = new Map;
+  for (const step of installStepsFor(job.steps, eco)) {
+    const name = stepDisplayName(step);
+    if (name && !targets.has(name))
+      targets.set(name, []);
+  }
+  if (targets.size === 0)
+    return [];
+  const jobName = job.name ?? job.id;
   for (const run of auditData.runs) {
     for (const j of run.jobs) {
       if (j.name !== jobName && !j.name.startsWith(`${jobName} (`))
         continue;
       for (const step of j.steps) {
-        if (/\b(install|npm ci)\b/i.test(step.name)) {
-          const d = durationMs(step.startedAt, step.completedAt);
-          if (d != null) {
-            const arr = stepDurations.get(step.name) ?? [];
-            arr.push(d);
-            stepDurations.set(step.name, arr);
-          }
-        }
+        const samples = targets.get(step.name);
+        if (!samples || step.conclusion !== "success")
+          continue;
+        const d = durationMs(step.startedAt, step.completedAt);
+        if (d != null)
+          samples.push(d);
       }
     }
   }
-  const result = new Map;
-  for (const [name, durations] of stepDurations) {
-    result.set(name, median(durations));
+  const measured = [];
+  for (const [name, samples] of targets) {
+    if (samples.length === 0)
+      continue;
+    measured.push({ name, medianMs: median(samples), samples: samples.length });
   }
-  return result;
+  return measured;
 }
 function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
   if (!auditDataByWorkflow || auditDataByWorkflow.size === 0)
@@ -7377,31 +7528,40 @@ function crossTierGate(findings, workflows, auditDataByWorkflow, pedantic) {
     }
   }
   for (const f of findings) {
-    if (f.rule === "install-no-cache" && f.job) {
-      const key = `${f.workflow}:${f.job}`;
-      if (setupDominatedJobs.has(key))
-        continue;
-      const wf = workflows.find((w) => w.path === f.workflow);
-      if (wf) {
-        const auditData = auditDataByWorkflow.get(f.workflow);
-        if (auditData) {
-          const stepMedians = getInstallStepMedians(auditData, f.job, wf);
-          const allUnder5s = stepMedians.size > 0 && [...stepMedians.values()].every((m) => m < 5000);
-          if (allUnder5s) {
-            if (pedantic) {
-              const medStr = [...stepMedians.entries()].map(([name, m]) => `${name}: ${Math.round(m / 1000)}s`).join(", ");
-              result.push({
-                ...f,
-                severity: "info",
-                evidence: `${f.evidence}. Measured: ${medStr} — caching would save nothing`
-              });
-            }
-            continue;
-          }
-        }
-      }
+    if (f.rule !== "install-no-cache" || !f.job) {
+      result.push(f);
+      continue;
     }
-    result.push(f);
+    if (setupDominatedJobs.has(`${f.workflow}:${f.job}`))
+      continue;
+    const wf = workflows.find((w) => w.path === f.workflow);
+    const job = wf?.jobs.get(f.job);
+    const auditData = auditDataByWorkflow.get(f.workflow);
+    const eco = f.meta?.ecosystem;
+    const measured = job && auditData && eco ? measureInstallSteps(auditData, job, eco) : [];
+    if (measured.length === 0 || !eco) {
+      result.push(f);
+      continue;
+    }
+    const summary = measured.map((m) => `${m.name}: ${fmtMinutes(m.medianMs)} median over ${m.samples} run${m.samples === 1 ? "" : "s"}`).join(", ");
+    if (measured.every((m) => m.medianMs < INSTALL_CACHE_WORTH_MS)) {
+      if (pedantic) {
+        result.push({
+          ...f,
+          severity: "info",
+          evidence: `Measured: ${summary} — under the ${INSTALL_CACHE_WORTH_MS / 1000}s payback floor, a cache would save nothing`
+        });
+      }
+      continue;
+    }
+    const totalMs = measured.reduce((sum, m) => sum + m.medianMs, 0);
+    result.push({
+      ...f,
+      severity: "medium",
+      evidence: `Measured: ${summary}. No matching cache action or configuration found`,
+      remediation: cacheRemediation(eco),
+      estimatedSavings: { minutesPerRun: Math.round(totalMs / 60000 * 10) / 10, confidence: "estimate" }
+    });
   }
   return result;
 }
@@ -7669,7 +7829,7 @@ var cacheKeyNoHash = {
 };
 
 // src/rules/double-cache.ts
-var RUST_CACHE_PATHS = /~\/\.cargo\b(?!\/bin\b)|\.cargo\/(registry|git)|(^|\/)target(\/|$)/;
+var RUST_CACHE_PATHS2 = /~\/\.cargo\b(?!\/bin\b)|\.cargo\/(registry|git)|(^|\/)target(\/|$)/;
 var SCCACHE_PATHS = /sccache/;
 function stepActionKey(step) {
   if (!step.uses)
@@ -7711,7 +7871,7 @@ var doubleCache = {
         }
       }
       for (const manual of manualCacheSteps) {
-        if (hasRustCache && RUST_CACHE_PATHS.test(manual.paths)) {
+        if (hasRustCache && RUST_CACHE_PATHS2.test(manual.paths)) {
           findings.push({
             rule: "double-cache",
             severity: "medium",
@@ -7737,126 +7897,6 @@ var doubleCache = {
             remediation: "Remove the manual actions/cache step; sccache-action manages its own cache."
           });
         }
-      }
-    }
-    return findings;
-  }
-};
-
-// src/rules/install-no-cache.ts
-var INSTALL_PATTERNS = [
-  { pattern: /\bnpm\s+(ci|install)\b(?!\s+-g)/, ecosystem: "node" },
-  { pattern: /\bpnpm\s+install\b/, ecosystem: "node" },
-  { pattern: /\byarn\s+install\b/, ecosystem: "node" },
-  { pattern: /\bbun\s+install\b/, ecosystem: "bun" },
-  { pattern: /\bpip\s+install\b/, ecosystem: "python" },
-  { pattern: /\bcargo\s+(build|test)\b/, ecosystem: "rust" }
-];
-var NODE_CACHE_PATHS = /node_modules|\.npm|\.pnpm-store|\.yarn/;
-var PIP_CACHE_PATHS = /pip|\.cache\/pip/;
-var RUST_CACHE_PATHS2 = /\.cargo|target\//;
-var BUN_CACHE_PATHS = /\.bun\/install\/cache/;
-function stepKey(step) {
-  if (!step.uses)
-    return null;
-  const ref = parseActionRef(step.uses);
-  return { key: ref.key, isLocal: ref.isLocal };
-}
-function detectInstallEcosystems(steps) {
-  const ecosystems = new Set;
-  for (const step of steps) {
-    if (!step.run)
-      continue;
-    for (const { pattern, ecosystem } of INSTALL_PATTERNS) {
-      if (pattern.test(step.run))
-        ecosystems.add(ecosystem);
-    }
-  }
-  return ecosystems;
-}
-function detectCachedEcosystems(steps) {
-  const cached = new Set;
-  for (const step of steps) {
-    const ref = stepKey(step);
-    if (!ref)
-      continue;
-    if (ref.isLocal) {
-      cached.add("node");
-      cached.add("python");
-      cached.add("rust");
-      cached.add("bun");
-      continue;
-    }
-    const { key } = ref;
-    if (key === "actions/setup-node" && step.with?.cache)
-      cached.add("node");
-    if (key === "actions/setup-python" && step.with?.cache)
-      cached.add("python");
-    if (key === "Swatinem/rust-cache")
-      cached.add("rust");
-    if (key === "mozilla-actions/sccache-action")
-      cached.add("rust");
-    if (key === "moonrepo/setup-rust") {
-      const cacheOpt = step.with?.cache;
-      if (cacheOpt !== false && cacheOpt !== "false")
-        cached.add("rust");
-    }
-    if (key === "astral-sh/setup-uv")
-      cached.add("python");
-    if (key === "pdm-project/setup-pdm")
-      cached.add("python");
-    if (key === "actions/cache" || key === "actions/cache/restore") {
-      const paths = typeof step.with?.path === "string" ? step.with.path : "";
-      if (paths.includes("${{")) {
-        cached.add("node");
-        cached.add("python");
-        cached.add("rust");
-        cached.add("bun");
-        continue;
-      }
-      if (NODE_CACHE_PATHS.test(paths))
-        cached.add("node");
-      if (PIP_CACHE_PATHS.test(paths))
-        cached.add("python");
-      if (RUST_CACHE_PATHS2.test(paths))
-        cached.add("rust");
-      if (BUN_CACHE_PATHS.test(paths))
-        cached.add("bun");
-    }
-  }
-  return cached;
-}
-var ECOSYSTEM_LABELS = {
-  node: "Node.js (npm/pnpm/yarn)",
-  bun: "Bun",
-  python: "Python (pip)",
-  rust: "Rust (cargo)"
-};
-var installNoCache = {
-  id: "install-no-cache",
-  tier: "static",
-  severity: "medium",
-  describe: "Package install without a cache mechanism",
-  check(ctx) {
-    const findings = [];
-    for (const [jobId, job] of ctx.workflow.jobs) {
-      const installed = detectInstallEcosystems(job.steps);
-      if (installed.size === 0)
-        continue;
-      const cached = detectCachedEcosystems(job.steps);
-      for (const eco of installed) {
-        if (cached.has(eco))
-          continue;
-        findings.push({
-          rule: "install-no-cache",
-          severity: "medium",
-          tier: "static",
-          workflow: ctx.workflow.path,
-          job: jobId,
-          message: `Job "${job.name ?? jobId}" installs ${ECOSYSTEM_LABELS[eco]} packages without a cache mechanism`,
-          evidence: `${ECOSYSTEM_LABELS[eco]} install detected but no matching cache action or configuration found`,
-          remediation: `Add a cache mechanism for ${ECOSYSTEM_LABELS[eco]} dependencies (e.g. setup-node with cache input, actions/cache, or an ecosystem-specific cache action).`
-        });
       }
     }
     return findings;
@@ -9533,7 +9573,7 @@ function formatJson(findings) {
 // package.json
 var package_default = {
   name: "ci-bottlenecks",
-  version: "0.1.3",
+  version: "0.1.4",
   description: "Find performance problems in GitHub Actions pipelines",
   type: "module",
   main: "dist/index.js",
