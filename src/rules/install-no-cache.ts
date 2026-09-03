@@ -104,16 +104,18 @@ function detectCachedEcosystems(steps: ParsedStep[]): Set<Ecosystem> {
   return cached;
 }
 
-// Statically the rule can see that an install has no cache, but not how long
-// the install takes — and a cache restore costs 2-4s per job on its own. So the
-// static finding is a `low` hint that says "measure this". The cross-tier gate
-// in runner.ts promotes it to `medium` when --audit measures the flagged step
-// at or above the payback floor, and drops it when the step measures under.
+// The YAML shows whether an install has a cache, but not whether a cache would
+// pay: a restore costs 2-4s per job on its own, and many installs finish in
+// one. So this is an audit-tier rule. The detection below runs on the YAML;
+// the cross-tier gate in runner.ts then measures the flagged install steps in
+// the sampled runs and reports at medium only when the median clears the
+// payback floor. Unmeasured or under-floor detections are dropped, or shown
+// as info traces under --pedantic.
 export const installNoCache: Rule = {
   id: "install-no-cache",
-  tier: "static",
+  tier: "audit",
   severity: "medium",
-  describe: "Package install without a cache mechanism",
+  describe: "Package install without a cache mechanism, measured slow enough to be worth one",
 
   check(ctx): Finding[] {
     const findings: Finding[] = [];
@@ -134,15 +136,15 @@ export const installNoCache: Rule = {
         const label = ECOSYSTEM_LABELS[eco];
         findings.push({
           rule: "install-no-cache",
-          severity: "low",
-          tier: "static",
+          severity: "medium",
+          tier: "audit",
           workflow: ctx.workflow.path,
           job: jobId,
           step: firstStep.index,
           location: firstStep.line ? { line: firstStep.line } : undefined,
           message: `Job "${job.name ?? jobId}" installs ${label} packages without a cache mechanism`,
-          evidence: `${label} install detected but no matching cache action or configuration found; install duration unmeasured`,
-          remediation: `Measure before caching: run the audit tier (--audit, or the action's audit: true) to see this install's median duration. A cache restore costs 2-4s per job, so caching only pays for installs of roughly 10s or more. If it qualifies: ${cacheRemediation(eco)}`,
+          evidence: `${label} install detected but no matching cache action or configuration found`,
+          remediation: cacheRemediation(eco),
           meta: { ecosystem: eco },
         });
       }

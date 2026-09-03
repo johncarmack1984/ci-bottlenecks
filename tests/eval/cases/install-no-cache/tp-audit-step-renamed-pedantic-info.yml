@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=fire kind=tp jobs=build count=1
-# why: the sampled runs name the install step differently from the current YAML, so it is unmeasured — the static hint stays rather than being silently dropped
+# eval: rule=install-no-cache expect=fire kind=tp jobs=build count=1 pedantic=true
+# why: the sampled runs name the install step differently from the current YAML, so it is unmeasured — under --pedantic the unmeasured detection surfaces as an info trace
 # source: synthetic; a workflow edit that renames the install step between the runs and the lint
 name: CI
 on: push

@@ -35,7 +35,7 @@ function lint(yaml: string, audit?: WorkflowAuditData, pedantic = false): Findin
   const wf = parseWorkflow("test.yml", yaml);
   if (!wf) throw new Error("Failed to parse YAML");
   return runRules(allRules, [wf], {
-    audit: false,
+    audit: true,
     pedantic,
     auditDataByWorkflow: audit ? new Map([["test.yml", audit]]) : undefined,
   }).filter((f) => f.rule === "install-no-cache");
@@ -75,14 +75,24 @@ describe("stepDisplayName follows GitHub's naming", () => {
 });
 
 describe("install-no-cache without measurements", () => {
-  it("is a low, unmeasured hint that points at the install step and asks for --audit", () => {
-    const f = lint(NPM_CI);
+  it("is silent: the detector cannot know whether a cache would pay", () => {
+    expect(lint(NPM_CI).length).toBe(0);
+    expect(lint(NPM_CI, runs([])).length).toBe(0);
+  });
+
+  it("is an info trace under pedantic, pointing at the install step", () => {
+    const f = lint(NPM_CI, undefined, true);
     expect(f.length).toBe(1);
-    expect(f[0]!.severity).toBe("low");
+    expect(f[0]!.severity).toBe("info");
     expect(f[0]!.step).toBe(1);
     expect(f[0]!.meta?.ecosystem).toBe("node");
     expect(f[0]!.evidence).toContain("unmeasured");
-    expect(f[0]!.remediation).toContain("--audit");
+  });
+
+  it("does not run at all outside the audit tier", () => {
+    const wf = parseWorkflow("test.yml", NPM_CI)!;
+    const f = runRules(allRules, [wf], { audit: false, pedantic: true }).filter((x) => x.rule === "install-no-cache");
+    expect(f.length).toBe(0);
   });
 });
 
@@ -92,7 +102,6 @@ describe("install-no-cache measured gate", () => {
     expect(f.length).toBe(1);
     expect(f[0]!.severity).toBe("medium");
     expect(f[0]!.evidence).toBe("Measured: Install dependencies: 45s median over 3 runs. No matching cache action or configuration found");
-    expect(f[0]!.remediation).not.toContain("--audit");
     expect(f[0]!.estimatedSavings).toEqual({ minutesPerRun: 0.8, confidence: "estimate" });
   });
 
@@ -118,10 +127,12 @@ describe("install-no-cache measured gate", () => {
     expect(f[0]!.severity).toBe("medium");
   });
 
-  it("keeps the static hint when the runs do not contain the step by name", () => {
-    const f = lint(NPM_CI, runs([[npmRun(45, undefined, "Run npm ci")]]));
+  it("says nothing when the runs do not contain the step by name, unless pedantic", () => {
+    const renamed = runs([[npmRun(45, undefined, "Run npm ci")]]);
+    expect(lint(NPM_CI, renamed).length).toBe(0);
+    const f = lint(NPM_CI, renamed, true);
     expect(f.length).toBe(1);
-    expect(f[0]!.severity).toBe("low");
+    expect(f[0]!.severity).toBe("info");
     expect(f[0]!.evidence).toContain("unmeasured");
   });
 

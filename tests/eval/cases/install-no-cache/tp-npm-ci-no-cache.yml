@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=fire kind=tp count=1
-# why: npm ci without any cache mechanism should fire
+# eval: rule=install-no-cache expect=fire kind=tp count=1 pedantic=true
+# why: npm ci without any cache mechanism should fire (unmeasured detection: pedantic-only info trace)
 # source: rule spec — uncached Node.js install
 name: npm ci without cache
 on: workflow_dispatch

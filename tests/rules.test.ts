@@ -4,11 +4,11 @@ import { runRules } from "../src/runner.ts";
 import { allRules } from "../src/rules/index.ts";
 import type { Finding, ParsedWorkflow } from "../src/types.ts";
 
-function check(yaml: string, opts?: { pedantic?: boolean; allWorkflows?: ParsedWorkflow[] }): Finding[] {
+function check(yaml: string, opts?: { audit?: boolean; pedantic?: boolean; allWorkflows?: ParsedWorkflow[] }): Finding[] {
   const wf = parseWorkflow("test.yml", yaml);
   if (!wf) throw new Error("Failed to parse YAML");
   return runRules(allRules, opts?.allWorkflows ?? [wf], {
-    audit: false,
+    audit: opts?.audit ?? false,
     pedantic: opts?.pedantic ?? false,
   }).filter((f) => f.workflow === "test.yml");
 }
@@ -252,7 +252,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm ci
       - run: npm test
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(1);
   });
 
@@ -270,7 +270,7 @@ jobs:
         with:
           cache: npm
       - run: npm ci
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 
@@ -285,7 +285,7 @@ jobs:
     steps:
       - uses: oven-sh/setup-bun@v2
       - run: bun install
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(1);
   });
 
@@ -305,7 +305,7 @@ jobs:
           key: bun-\${{ hashFiles('bun.lock') }}
           restore-keys: bun-
       - run: bun install
-`), "install-no-cache");
+`, { audit: true, pedantic: true }), "install-no-cache");
     expect(f.length).toBe(0);
   });
 });

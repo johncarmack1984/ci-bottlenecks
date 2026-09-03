@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: Local composite actions are opaque — the rule assumes they handle caching for all ecosystems
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: Local composite actions are opaque — the rule assumes they handle caching for all ecosystems (unmeasured detection: pedantic-only info trace)
 # source: rule spec — local composite actions treated as cached for all ecosystems
 name: npm ci with local composite action
 on: workflow_dispatch

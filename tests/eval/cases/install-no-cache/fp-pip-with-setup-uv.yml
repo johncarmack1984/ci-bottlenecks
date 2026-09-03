@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: astral-sh/setup-uv provides Python dependency caching — pip install is covered
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: astral-sh/setup-uv provides Python dependency caching — pip install is covered (unmeasured detection: pedantic-only info trace)
 # source: rule spec — setup-uv is a recognized cache provider for Python
 name: pip install with setup-uv
 on: workflow_dispatch

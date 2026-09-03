@@ -142,16 +142,16 @@
     },
     {
       "rule": "install-no-cache",
-      "cases": 19,
-      "passed": 19,
+      "cases": 20,
+      "passed": 20,
       "failed": 0,
       "tp": {
         "total": 7,
         "hit": 7
       },
       "fp": {
-        "total": 11,
-        "guarded": 11
+        "total": 12,
+        "guarded": 12
       },
       "fn": 0,
       "miss": 1,

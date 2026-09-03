@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=fire kind=tp count=1
-# why: cargo build without any Rust cache mechanism should fire
+# eval: rule=install-no-cache expect=fire kind=tp count=1 pedantic=true
+# why: cargo build without any Rust cache mechanism should fire (unmeasured detection: pedantic-only info trace)
 # source: rule spec — uncached Rust build
 name: cargo build without cache
 on: workflow_dispatch

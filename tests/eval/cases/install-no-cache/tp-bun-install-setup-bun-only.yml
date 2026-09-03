@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=fire kind=tp count=1
-# why: oven-sh/setup-bun only caches the bun binary, not dependency installs — bun install still needs a separate cache mechanism
+# eval: rule=install-no-cache expect=fire kind=tp count=1 pedantic=true
+# why: oven-sh/setup-bun only caches the bun binary, not dependency installs — bun install still needs a separate cache mechanism (unmeasured detection: pedantic-only info trace)
 # source: rule spec — setup-bun is NOT a dependency cache provider
 name: bun install with setup-bun only
 on: workflow_dispatch

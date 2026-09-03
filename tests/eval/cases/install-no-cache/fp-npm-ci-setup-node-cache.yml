@@ -1,5 +1,5 @@
-# eval: rule=install-no-cache expect=silent kind=fp
-# why: setup-node with cache: npm handles dependency caching — npm ci is covered
+# eval: rule=install-no-cache expect=silent kind=fp pedantic=true
+# why: setup-node with cache: npm handles dependency caching — npm ci is covered (unmeasured detection: pedantic-only info trace)
 # source: rule spec — setup-node with cache input is a recognized cache provider
 name: npm ci with setup-node cache
 on: workflow_dispatch
